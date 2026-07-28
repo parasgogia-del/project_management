@@ -1,0 +1,23 @@
+{% extends "templates/web.html" %}
+
+{% block head %}
+{{ super() }}
+{% for css in get_vite_css() %}
+<link rel="stylesheet" href="{{ css }}">
+{% endfor %}
+{% endblock %}
+
+{% block page_content %}
+<div id="app"></div>
+<div id="modals"></div>
+<div id="popovers"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+  window.csrf_token = '{{ frappe.session.csrf_token }}';
+</script>
+{% for js in get_vite_js() %}
+<script type="module" src="{{ js }}"></script>
+{% endfor %}
+{% endblock %}

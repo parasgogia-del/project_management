@@ -77,10 +77,12 @@ app_license = "mit"
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "project_management.utils.jinja_methods",
-# 	"filters": "project_management.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"project_management.utils.vite_assets.get_vite_js",
+		"project_management.utils.vite_assets.get_vite_css",
+	]
+}
 
 # Installation
 # ------------
@@ -255,4 +257,13 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
+
+# Website Route Rules (SPA)
+# -------------------------
+website_route_rules = [
+    {
+        "from_route": "/project_management/<path:app_path>",
+        "to_route": "project_management",
+    },
+]
 
