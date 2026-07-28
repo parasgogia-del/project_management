@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "autoincrement",
+ "creation": "2026-07-23 15:18:55.648148",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "time_log_details_section",
+  "task",
+  "project",
+  "project_member",
+  "date",
+  "column_break_vygg",
+  "hours",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Project Task",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "task.project",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project Info",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "project_member",
+   "fieldtype": "Link",
+   "label": "Project Member",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hours",
+   "fieldtype": "Float",
+   "label": "Hours",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_vygg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "time_log_details_section",
+   "fieldtype": "Section Break",
+   "label": "Time log details"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-23 16:20:47.416103",
+ "modified_by": "Administrator",
+ "module": "Project Management",
+ "name": "Time Log",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

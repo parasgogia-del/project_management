@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "field:title",
+ "creation": "2026-07-22 12:06:35.721567",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "deliverable_details_section",
+  "project",
+  "title",
+  "description",
+  "tasks",
+  "column_break_jzon",
+  "status",
+  "due_date",
+  "file",
+  "access_link__notes",
+  "submitted_by",
+  "delivery_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project Info",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nWIP\nReady for Approval\nAwaiting Client Review\nApproved\nChanges Requested"
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "label": "File"
+  },
+  {
+   "fieldname": "access_link__notes",
+   "fieldtype": "Small Text",
+   "label": "Access Link / Notes"
+  },
+  {
+   "fieldname": "deliverable_details_section",
+   "fieldtype": "Section Break",
+   "label": "Deliverable details"
+  },
+  {
+   "fieldname": "column_break_jzon",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tasks",
+   "fieldtype": "Table",
+   "label": "Tasks",
+   "options": "Deliverable Task"
+  },
+  {
+   "fieldname": "submitted_by",
+   "fieldtype": "Link",
+   "label": "Submitted By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-25 14:14:36.156199",
+ "modified_by": "Administrator",
+ "module": "Project Management",
+ "name": "Deliverable",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Project Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Project Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Client",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vendor",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
