@@ -48,9 +48,9 @@
       </div>
     </div>
 
-    <!-- Active Deliverables -->
+    <!-- Deliverables -->
     <div class="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 class="text-sm font-semibold text-gray-800 mb-3">Active Deliverables</h2>
+      <h2 class="text-sm font-semibold text-gray-800 mb-3">My Deliverables</h2>
       <div v-if="deliverables.length === 0" class="text-xs text-gray-400 text-center py-4">No deliverables</div>
       <div v-else class="divide-y divide-gray-50">
         <div

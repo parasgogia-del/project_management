@@ -127,12 +127,12 @@ import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 const WORKFLOW_ACTIONS = {
-  'Draft': ['Submit for Approval'],
-  'WIP': ['Submit for Approval'],
-  'Ready for Approval': ['Approve', 'Request Changes'],
-  'Awaiting Client Review': ['Approve', 'Request Changes'],
+  'Draft': [],
+  'WIP': [],
+  'Ready for Approval': ['Send for Approval'],
+  'Awaiting Client Review': [],
   'Approved': [],
-  'Changes Requested': ['Submit for Approval'],
+  'Changes Requested': [],
 }
 
 export default {
@@ -189,14 +189,8 @@ export default {
       this.updating = true
       this.updateError = ''
       try {
-        const actionMap = {
-          'Submit for Approval': 'Submit for Approval',
-          'Approve': 'Approve',
-          'Request Changes': 'Request Changes',
-        }
         await call('project_management.api.client.update_deliverable_status', {
-          name: this.deliverableId,
-          action: actionMap[action] || action,
+          name: this.deliverableId, action,
         })
         await this.loadAll()
       } catch (err) {
@@ -206,8 +200,6 @@ export default {
       }
     },
     actionClasses(action) {
-      if (action === 'Approve') return 'bg-green-600 text-white hover:bg-green-700'
-      if (action === 'Request Changes') return 'bg-orange-100 text-orange-700 hover:bg-orange-200'
       return 'bg-blue-600 text-white hover:bg-blue-700'
     },
   },

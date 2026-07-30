@@ -36,6 +36,11 @@
                 <p class="text-gray-700 font-semibold">{{ task.actual_hours || 0 }}h</p>
               </div>
             </div>
+            <div v-if="deliverable" class="mt-3 pt-3 border-t border-gray-100">
+              <a @click="$router.push(`/member/deliverable/${deliverable.name}`)" class="text-xs text-blue-600 hover:underline cursor-pointer">
+                View Deliverable: {{ deliverable.title }}
+              </a>
+            </div>
           </div>
 
           <!-- Time Logs -->
@@ -62,6 +67,19 @@
         </div>
 
         <div class="space-y-6">
+          <!-- Today's Focus Toggle -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <button
+              @click="toggleFocus"
+              :disabled="focusing"
+              class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="task.is_today_focus ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-transparent'"
+            >
+              <span class="text-lg">{{ task.is_today_focus ? '\u2605' : '\u2606' }}</span>
+              {{ task.is_today_focus ? 'In Today\'s Focus' : 'Add to Today\'s Focus' }}
+            </button>
+          </div>
+
           <!-- Quick Status Update -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Quick Status</h2>
@@ -98,7 +116,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input v-model="timeLogForm.date" type="date" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
+            <input v-model="timeLogForm.date" type="date" :min="today" :max="today" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -130,9 +148,11 @@ export default {
   data() {
     return {
       task: null,
+      deliverable: null,
       timeLogs: [],
       loading: true,
       updating: false,
+      focusing: false,
       showTimeLogModal: false,
       loggingTime: false,
       timeLogForm: { hours: null, date: new Date().toISOString().split('T')[0], description: '' },
@@ -140,19 +160,29 @@ export default {
   },
   computed: {
     taskId() { return this.$route.params.id },
+    today() { return new Date().toLocaleDateString('en-CA') },
   },
   mounted() { this.loadAll() },
   methods: {
     async loadAll() {
       this.loading = true
       try {
-        const [t, l] = await Promise.all([
+        const [t, l, d] = await Promise.all([
           call('project_management.api.client.get_task', { name: this.taskId }),
           call('project_management.api.client.get_time_logs', { task: this.taskId }),
+          call('project_management.api.client.get_deliverable_for_task', { task: this.taskId }),
         ])
         this.task = t.message
         this.timeLogs = l.message || []
+        this.deliverable = d?.message?.found ? d.message : null
       } catch {} finally { this.loading = false }
+    },
+    async toggleFocus() {
+      this.focusing = true
+      try {
+        const res = await call('project_management.api.client.toggle_today_focus', { name: this.taskId })
+        this.task.is_today_focus = res.message.is_today_focus
+      } catch {} finally { this.focusing = false }
     },
     async updateStatus(status) {
       this.updating = true
@@ -166,7 +196,7 @@ export default {
       try {
         await call('project_management.api.client.create_time_log', {
           task: this.taskId, project: this.task.project,
-          date: this.timeLogForm.date, hours: this.timeLogForm.hours, description: this.timeLogForm.description,
+          hours: this.timeLogForm.hours, description: this.timeLogForm.description,
         })
         this.showTimeLogModal = false
         this.timeLogForm = { hours: null, date: new Date().toISOString().split('T')[0], description: '' }

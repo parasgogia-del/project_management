@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "vender_information_section",
+  "user",
   "vendor_name",
   "company",
   "email",
@@ -17,11 +18,12 @@
  ],
  "fields": [
   {
+   "fetch_from": "user.first_name",
    "fieldname": "vendor_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Vendor Name",
-   "reqd": 1,
+   "read_only": 1,
    "unique": 1
   },
   {
@@ -36,10 +38,12 @@
    "label": "Company"
   },
   {
+   "fetch_from": "user.email",
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Email"
+   "label": "Email",
+   "read_only": 1
   },
   {
    "fieldname": "status",
@@ -53,12 +57,19 @@
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Notes"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-27 16:41:46.966230",
+ "modified": "2026-07-29 19:35:47.098337",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Vendor",

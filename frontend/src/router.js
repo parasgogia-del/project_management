@@ -78,6 +78,11 @@ const routes = [
         name: 'MemberTask',
         component: () => import('@/pages/member/TaskPage.vue'),
       },
+      {
+        path: 'member/deliverable/:id',
+        name: 'MemberDeliverable',
+        component: () => import('@/pages/member/DeliverableView.vue'),
+      },
       // Client portal
       {
         path: 'client/dashboard',
@@ -88,6 +93,11 @@ const routes = [
         path: 'client/project/:id',
         name: 'ClientProject',
         component: () => import('@/pages/client/ProjectView.vue'),
+      },
+      {
+        path: 'client/task/:id',
+        name: 'ClientTask',
+        component: () => import('@/pages/client/TaskView.vue'),
       },
       {
         path: 'client/deliverable/:id',

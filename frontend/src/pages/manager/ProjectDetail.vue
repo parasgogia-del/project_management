@@ -33,6 +33,13 @@
         >
           Edit
         </router-link>
+        <button
+          v-if="project"
+          @click="showDeleteConfirm = true"
+          class="px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+        >
+          Delete
+        </button>
       </div>
     </div>
 
@@ -203,6 +210,37 @@
         </div>
       </div>
     </template>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Delete Project</h2>
+        <p class="text-sm text-gray-500 mb-6">
+          Are you sure you want to delete <strong>{{ project?.project_name }}</strong>? This action cannot be undone. All tasks, deliverables, and files associated with this project will also be removed.
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            @click="showDeleteConfirm = false"
+            class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            @click="deleteProject"
+            :disabled="deleting"
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {{ deleting ? 'Deleting...' : 'Delete Project' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <Toast ref="toast" />
   </div>
 </template>
 
@@ -214,16 +252,19 @@ import ProgressBar from '@/components/ProgressBar.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import Toast from '@/components/Toast.vue'
 
 export default {
   name: 'ProjectDetail',
-  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, FileUpload, CommentSection },
+  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, FileUpload, CommentSection, Toast },
   data() {
     return {
       project: null,
       tasks: [],
       deliverables: [],
       loading: true,
+      showDeleteConfirm: false,
+      deleting: false,
     }
   },
   computed: {
@@ -264,6 +305,19 @@ export default {
     getInitials(user) {
       if (!user) return '?'
       return user.split('@')[0].slice(0, 2).toUpperCase()
+    },
+    async deleteProject() {
+      this.deleting = true
+      try {
+        await call('project_management.api.client.delete_project', { name: this.projectId })
+        this.$refs.toast.show('Project deleted successfully', 'success')
+        this.$router.push('/projects')
+      } catch (err) {
+        this.$refs.toast.show(err.message || 'Failed to delete project', 'error')
+      } finally {
+        this.deleting = false
+        this.showDeleteConfirm = false
+      }
     },
   },
 }

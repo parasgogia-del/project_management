@@ -47,19 +47,38 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p class="text-2xl font-bold text-purple-600">{{ report.time.total_hours?.toFixed(1) || 0 }}h</p>
-          <p class="text-xs text-gray-500 mt-1">Hours Logged ({{ period }})</p>
+          <p class="text-2xl font-bold text-purple-600">{{ report.tasks.completed_in_period || 0 }}</p>
+          <p class="text-xs text-gray-500 mt-1">Completed {{ period === 'daily' ? 'Today' : 'This Week' }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p class="text-2xl font-bold text-cyan-600">{{ report.tasks.created_in_period || 0 }}</p>
+          <p class="text-xs text-gray-500 mt-1">Created {{ period === 'daily' ? 'Today' : 'This Week' }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
           <p class="text-2xl font-bold text-indigo-600">{{ report.deliverables.approved }}/{{ report.deliverables.total }}</p>
           <p class="text-xs text-gray-500 mt-1">Deliverables Approved</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p class="text-2xl font-bold text-orange-600">{{ report.tasks.blocked }}</p>
-          <p class="text-xs text-gray-500 mt-1">Blocked Tasks</p>
+          <p class="text-2xl font-bold text-orange-600">{{ report.time.total_hours?.toFixed(1) || 0 }}h</p>
+          <p class="text-xs text-gray-500 mt-1">Hours Logged</p>
         </div>
+      </div>
+
+      <!-- Completion % bar -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold text-gray-800">Project Completion</h2>
+          <span class="text-sm font-bold text-blue-600">{{ report.completion_percentage || 0 }}%</span>
+        </div>
+        <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-blue-600 rounded-full transition-all"
+            :style="{ width: `${report.completion_percentage || 0}%` }"
+          />
+        </div>
+        <p class="text-xs text-gray-400 mt-2">{{ report.tasks.completed }} of {{ report.tasks.total }} tasks completed</p>
       </div>
 
       <!-- Recent Tasks -->

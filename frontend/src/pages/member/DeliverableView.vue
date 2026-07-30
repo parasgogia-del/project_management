@@ -17,7 +17,6 @@
     <template v-else-if="deliverable">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
-          <!-- Details -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Details</h2>
             <p class="text-sm text-gray-600">{{ deliverable.description || 'No description' }}</p>
@@ -37,19 +36,16 @@
             </div>
           </div>
 
-          <!-- Files -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <FileUpload doctype="Deliverable" :docname="deliverableId" />
           </div>
 
-          <!-- Comments -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <CommentSection doctype="Deliverable" :docname="deliverableId" />
           </div>
         </div>
 
         <div class="space-y-6">
-          <!-- Vendor Actions -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Actions</h2>
             <div class="space-y-2">
@@ -68,7 +64,6 @@
             </div>
           </div>
 
-          <!-- Tasks in this deliverable -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Tasks</h2>
             <div v-if="tasks.length === 0" class="text-xs text-gray-400 text-center py-4">No tasks</div>
@@ -76,7 +71,7 @@
               <div
                 v-for="t in tasks"
                 :key="t.name"
-                @click="$router.push(`/vendor/task/${t.name}`)"
+                @click="$router.push(`/member/task/${t.name}`)"
                 class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 rounded transition-colors"
               >
                 <p class="text-xs text-gray-800 truncate">{{ t.title }}</p>
@@ -85,7 +80,6 @@
             </div>
           </div>
 
-          <!-- Progress -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-2">Progress</h2>
             <div class="text-center py-4">
@@ -107,7 +101,7 @@ import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
-const VENDOR_ACTIONS = {
+const MEMBER_ACTIONS = {
   'Draft': [],
   'WIP': ['Submit for Approval'],
   'Ready for Approval': [],
@@ -117,7 +111,7 @@ const VENDOR_ACTIONS = {
 }
 
 export default {
-  name: 'VendorDeliverableView',
+  name: 'MemberDeliverableView',
   components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection },
   data() {
     return { deliverable: null, tasks: [], loading: true, updating: false, updateError: '' }
@@ -126,7 +120,7 @@ export default {
     deliverableId() { return this.$route.params.id },
     availableActions() {
       if (!this.deliverable) return []
-      return VENDOR_ACTIONS[this.deliverable.status] || []
+      return MEMBER_ACTIONS[this.deliverable.status] || []
     },
     totalTasks() { return this.tasks.length },
     completedTasks() { return this.tasks.filter(t => t.status === 'Completed').length },
@@ -156,8 +150,6 @@ export default {
       } finally { this.updating = false }
     },
     actionClasses(action) {
-      if (action === 'Approve') return 'bg-green-600 text-white hover:bg-green-700'
-      if (action === 'Request Changes') return 'bg-orange-100 text-orange-700 hover:bg-orange-200'
       return 'bg-blue-600 text-white hover:bg-blue-700'
     },
   },

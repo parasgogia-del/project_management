@@ -14,6 +14,13 @@
           {{ task.project }} / {{ task.deliverable }}
         </p>
       </div>
+      <button
+        v-if="task"
+        @click="openEditModal"
+        class="px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+      >
+        Edit Task
+      </button>
     </div>
 
     <SkeletonLoader v-if="loading" :lines="5" />
@@ -154,32 +161,112 @@
         </div>
       </div>
     </div>
+
+    <!-- Edit Task Modal -->
+    <div
+      v-if="showEditModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      @click.self="showEditModal = false"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Edit Task</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <input v-model="editForm.title" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+              <select v-model="editForm.assigned_to" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none">
+                <option value="">Unassigned</option>
+                <option v-for="member in projectMembers" :key="member" :value="member">{{ member }}</option>
+              </select>
+              <button @click="assignEditToMe" type="button" class="mt-1 text-xs text-blue-600 hover:text-blue-700">Assign to me</button>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <select v-model="editForm.priority" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none">
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input v-model="editForm.start_date" type="date" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <input v-model="editForm.due_date" type="date" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+            <input v-model.number="editForm.estimated_hours" type="number" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea v-model="editForm.description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none resize-none" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+          <button @click="showEditModal = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button
+            @click="saveTask"
+            :disabled="!editForm.title || savingTask"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ savingTask ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <Toast ref="toast" />
   </div>
 </template>
 
 <script>
 import { FeatherIcon } from 'frappe-ui'
 import { call } from '@/utils/api.js'
+// import { store } from '@/data/store.js'
 import StatusBadge from '@/components/StatusBadge.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import Toast from '@/components/Toast.vue'
 
 export default {
   name: 'TaskDetail',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection },
+  components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection, Toast },
   data() {
     return {
       task: null,
       timeLogs: [],
+      projectMembers: [],
       loading: true,
       updating: false,
       showTimeLogModal: false,
+      showEditModal: false,
       loggingTime: false,
+      savingTask: false,
       statusOptions: ['Open', 'Working', 'Blocked', 'Completed'],
       timeLogForm: {
         hours: null,
         date: new Date().toISOString().split('T')[0],
+        description: '',
+      },
+      editForm: {
+        title: '',
+        assigned_to: '',
+        priority: 'Medium',
+        start_date: '',
+        due_date: '',
+        estimated_hours: null,
         description: '',
       },
     }
@@ -202,6 +289,11 @@ export default {
         ])
         this.task = taskRes.message
         this.timeLogs = logsRes.message || []
+
+        if (this.task?.project) {
+          const projectRes = await call('project_management.api.client.get_project', { name: this.task.project })
+          this.projectMembers = (projectRes.message?.project_members || []).map(m => m.user)
+        }
       } catch {
         console.error('Failed to load task')
       } finally {
@@ -235,10 +327,47 @@ export default {
         this.showTimeLogModal = false
         this.timeLogForm = { hours: null, date: new Date().toISOString().split('T')[0], description: '' }
         await this.loadAll()
+        const hours = await call('project_management.api.client.get_today_hours')
+        store.todayHours = hours.message || 0
       } catch (err) {
         console.error('Failed to log time', err)
       } finally {
         this.loggingTime = false
+      }
+    },
+    openEditModal() {
+      this.editForm = {
+        title: this.task.title || '',
+        assigned_to: this.task.assigned_to || '',
+        priority: this.task.priority || 'Medium',
+        start_date: this.task.start_date || '',
+        due_date: this.task.due_date || '',
+        estimated_hours: this.task.estimated_hours || null,
+        description: this.task.description || '',
+      }
+      this.showEditModal = true
+    },
+    async assignEditToMe() {
+      try {
+        const result = await call('project_management.api.client.get_session_user')
+        this.editForm.assigned_to = result.message
+      } catch {
+        console.error('Failed to get session user')
+      }
+    },
+    async saveTask() {
+      this.savingTask = true
+      try {
+        await call('project_management.api.client.update_task', {
+          name: this.taskId,
+          data: this.editForm,
+        })
+        this.showEditModal = false
+        await this.loadAll()
+      } catch (err) {
+        console.error('Failed to update task', err)
+      } finally {
+        this.savingTask = false
       }
     },
     statusDotColor(status) {

@@ -10,7 +10,19 @@
     <div id="app"></div>
     <div id="modals"></div>
     <div id="popovers"></div>
-    <script> window.csrf_token = '{{ csrf_token }}'; </script>
+    <script>
+      (function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/api/method/project_management.api.client.get_csrf_token', false);
+        xhr.withCredentials = true;
+        try {
+          xhr.send();
+          window.csrf_token = JSON.parse(xhr.responseText).message;
+        } catch(e) {
+          console.warn('Failed to fetch CSRF token', e);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

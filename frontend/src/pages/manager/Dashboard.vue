@@ -114,8 +114,8 @@
               <p class="text-[10px] text-gray-500">Hours Logged</p>
             </div>
             <div class="text-center p-3 bg-indigo-50 rounded-lg">
-              <p class="text-lg font-bold text-indigo-700">{{ report.deliverables.approved }}/{{ report.deliverables.total }}</p>
-              <p class="text-[10px] text-gray-500">Deliverables</p>
+              <p class="text-lg font-bold text-indigo-700">{{ report.completion_percentage || 0 }}%</p>
+              <p class="text-[10px] text-gray-500">Completion</p>
             </div>
           </div>
           <SkeletonLoader v-else-if="reportLoading" :lines="3" />

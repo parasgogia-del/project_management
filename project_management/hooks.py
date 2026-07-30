@@ -84,6 +84,49 @@ jinja = {
 	]
 }
 
+# CSRF Exempt
+csrf_exempt = [
+	"project_management.api.client.get_progress_report",
+	"project_management.api.client.get_tasks",
+	"project_management.api.client.get_task",
+	"project_management.api.client.get_projects",
+	"project_management.api.client.get_project",
+	"project_management.api.client.get_deliverables",
+	"project_management.api.client.get_deliverable",
+	"project_management.api.client.get_deliverables_with_details",
+	"project_management.api.client.get_time_logs",
+	"project_management.api.client.get_comments",
+	"project_management.api.client.get_gantt_tasks",
+	"project_management.api.client.get_session_user",
+	"project_management.api.client.get_csrf_token",
+	"project_management.api.client.get_notifications",
+	"project_management.api.client.create_project",
+	"project_management.api.client.create_task",
+	"project_management.api.client.create_time_log",
+	"project_management.api.client.update_project",
+	"project_management.api.client.update_task_status",
+	"project_management.api.client.update_deliverable_status",
+	"project_management.api.client.add_comment",
+	"project_management.api.client.edit_comment",
+	"project_management.api.client.delete_comment",
+	"project_management.api.client.delete_project",
+	"project_management.api.client.update_task",
+	"project_management.api.client.toggle_today_focus",
+	"project_management.api.client.get_today_hours",
+	"project_management.api.vendor.get_vendor_projects",
+	"project_management.api.vendor.get_vendor_deliverables",
+	"project_management.api.vendor.get_vendor_tasks",
+	"project_management.api.file.upload_project_file",
+	"project_management.api.file.get_project_files",
+	"project_management.api.file.delete_project_file",
+	"project_management.api.file.upload_deliverable_file",
+	"project_management.api.file.get_deliverable_files",
+	"project_management.api.file.delete_deliverable_file",
+	"project_management.api.file.upload_task_file",
+	"project_management.api.file.get_task_files",
+	"project_management.api.file.delete_task_file",
+]
+
 # Installation
 # ------------
 

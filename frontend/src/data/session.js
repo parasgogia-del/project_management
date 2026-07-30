@@ -14,3 +14,5 @@ export const session = reactive({
   user: computed(() => sessionUser.data),
   isLoggedIn: computed(() => !!sessionUser.data && sessionUser.data !== 'Guest'),
 })
+
+window.currentUser = session

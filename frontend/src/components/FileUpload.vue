@@ -70,12 +70,20 @@ export default {
   methods: {
     async loadFiles() {
       try {
-        const url = this.doctype === 'Project Info'
-          ? 'project_management.api.file.get_project_files'
-          : 'project_management.api.file.get_deliverable_files'
-        const params = this.doctype === 'Project Info'
-          ? { project: this.docname }
-          : { deliverable: this.docname }
+        let url, params
+        if (this.doctype === 'Project Info') {
+          url = 'project_management.api.file.get_project_files'
+          params = { project: this.docname }
+        } else if (this.doctype === 'Deliverable') {
+          url = 'project_management.api.file.get_deliverable_files'
+          params = { deliverable: this.docname }
+        } else if (this.doctype === 'Project Task') {
+          url = 'project_management.api.file.get_task_files'
+          params = { task: this.docname }
+        } else {
+          this.files = []
+          return
+        }
         const result = await call(url, params)
         this.files = result.message || []
       } catch {
@@ -88,14 +96,26 @@ export default {
 
       this.uploading = true
       try {
-        const paramName = this.doctype === 'Project Info' ? 'project' : 'deliverable'
-        const url = this.doctype === 'Project Info'
-          ? 'project_management.api.file.upload_project_file'
-          : 'project_management.api.file.upload_deliverable_file'
+        let paramName, url
+        if (this.doctype === 'Project Info') {
+          paramName = 'project'
+          url = 'project_management.api.file.upload_project_file'
+        } else if (this.doctype === 'Deliverable') {
+          paramName = 'deliverable'
+          url = 'project_management.api.file.upload_deliverable_file'
+        } else if (this.doctype === 'Project Task') {
+          paramName = 'task'
+          url = 'project_management.api.file.upload_task_file'
+        } else {
+          return
+        }
 
         const formData = new FormData()
         formData.append('file', file)
         formData.append(paramName, this.docname)
+
+        const token = window.csrf_token || (typeof frappe !== 'undefined' && frappe.csrf_token) || ''
+        if (token) formData.append('csrf_token', token)
 
         await fetch(`/api/method/${url}`, {
           method: 'POST',
@@ -112,9 +132,16 @@ export default {
     },
     async handleDelete(fileName) {
       try {
-        const url = this.doctype === 'Project Info'
-          ? 'project_management.api.file.delete_project_file'
-          : 'project_management.api.file.delete_deliverable_file'
+        let url
+        if (this.doctype === 'Project Info') {
+          url = 'project_management.api.file.delete_project_file'
+        } else if (this.doctype === 'Deliverable') {
+          url = 'project_management.api.file.delete_deliverable_file'
+        } else if (this.doctype === 'Project Task') {
+          url = 'project_management.api.file.delete_task_file'
+        } else {
+          return
+        }
         await call(url, { file_name: fileName })
         this.$emit('deleted')
         await this.loadFiles()

@@ -19,9 +19,10 @@
   "assigned_vendor",
   "priority",
   "status",
-  "estimated_hours",
-  "actual_hours"
- ],
+   "estimated_hours",
+   "actual_hours",
+   "is_today_focus"
+  ],
  "fields": [
   {
    "fieldname": "task_details_section",
@@ -104,6 +105,12 @@
    "fieldtype": "Link",
    "label": "Assigned Vendor",
    "options": "Vendor"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_today_focus",
+   "fieldtype": "Check",
+   "label": "Today's Focus"
   }
  ],
  "grid_page_length": 50,

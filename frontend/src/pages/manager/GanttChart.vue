@@ -4,10 +4,17 @@
       <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
         <feather-icon name="arrow-left" class="w-5 h-5" />
       </button>
-      <div>
+      <div class="flex-1">
         <h1 class="text-xl font-bold text-gray-900">Gantt Chart</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
+      <button
+        @click="loadTasks"
+        class="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+      >
+        <feather-icon name="refresh-cw" class="w-3.5 h-3.5 inline mr-1" />
+        Refresh
+      </button>
     </div>
 
     <SkeletonLoader v-if="loading" :lines="5" />
@@ -17,9 +24,17 @@
     </div>
 
     <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <!-- Summary row -->
+      <div class="flex items-center gap-6 px-4 py-2 border-b border-gray-200 bg-gray-50 text-xs text-gray-500">
+        <span>{{ tasks.length }} tasks</span>
+        <span>{{ tasks.filter(t => t.status === 'Completed').length }} completed</span>
+        <span>{{ tasks.filter(t => t.status === 'Working').length }} in progress</span>
+        <span>{{ totalDays }} day span</span>
+      </div>
+
       <!-- Header with date range -->
       <div class="flex border-b border-gray-200">
-        <div class="w-64 flex-shrink-0 px-4 py-2 text-xs font-medium text-gray-500 border-r border-gray-200">
+        <div class="w-72 flex-shrink-0 px-4 py-2 text-xs font-medium text-gray-500 border-r border-gray-200">
           Task
         </div>
         <div class="flex-1 overflow-x-auto">
@@ -43,9 +58,13 @@
           :key="task.name"
           class="flex border-b border-gray-50 hover:bg-gray-50"
         >
-          <div class="w-64 flex-shrink-0 px-4 py-2 border-r border-gray-200">
+          <div class="w-72 flex-shrink-0 px-4 py-2 border-r border-gray-200">
             <p class="text-xs font-medium text-gray-800 truncate">{{ task.title }}</p>
-            <p class="text-[10px] text-gray-400">{{ task.assigned_to || task.assigned_vendor || 'Unassigned' }}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <p class="text-[10px] text-gray-400">{{ task.assigned_to || task.assigned_vendor || 'Unassigned' }}</p>
+              <span class="text-[10px] text-gray-400">|</span>
+              <p class="text-[10px] text-gray-400">{{ getDuration(task) }}</p>
+            </div>
           </div>
           <div class="flex-1 relative" :style="{ minWidth: `${dateRange.length * 40}px` }">
             <!-- Grid lines -->
@@ -59,12 +78,17 @@
             </div>
             <!-- Task bar -->
             <div
-              class="absolute top-1/2 -translate-y-1/2 h-5 rounded-md flex items-center px-1.5 text-[9px] font-medium text-white cursor-pointer"
+              class="absolute top-1/2 -translate-y-1/2 h-6 rounded-md flex items-center px-1.5 text-[9px] font-medium text-white cursor-pointer group"
               :style="taskBarStyle(task)"
-              :title="`${task.title} (${task.start_date} - ${task.due_date})`"
+              :title="`${task.title} (${task.start_date} - ${task.due_date}) | Duration: ${getDuration(task)} | ${task.status}`"
               @click="$router.push(`/task/${task.name}`)"
             >
               <span class="truncate">{{ task.title }}</span>
+              <!-- Progress fill -->
+              <div
+                v-if="task.status === 'Completed'"
+                class="absolute inset-0 rounded-md bg-white/20"
+              />
             </div>
           </div>
         </div>
@@ -94,6 +118,7 @@ export default {
     return {
       tasks: [],
       loading: true,
+      refreshInterval: null,
       legend: {
         Open: '#6b7280',
         Working: '#3b82f6',
@@ -118,7 +143,6 @@ export default {
       const start = new Date(dates[0])
       const end = new Date(dates[dates.length - 1])
 
-      // Add padding
       start.setDate(start.getDate() - 2)
       end.setDate(end.getDate() + 5)
 
@@ -130,13 +154,21 @@ export default {
       }
       return range
     },
+    totalDays() {
+      if (!this.dateRange.length) return 0
+      return this.dateRange.length
+    },
   },
   mounted() {
     this.loadTasks()
+    this.refreshInterval = setInterval(() => this.loadTasks(false), 30000)
+  },
+  beforeUnmount() {
+    if (this.refreshInterval) clearInterval(this.refreshInterval)
   },
   methods: {
-    async loadTasks() {
-      this.loading = true
+    async loadTasks(showLoader = true) {
+      if (showLoader) this.loading = true
       try {
         const result = await call('project_management.api.client.get_gantt_tasks', {
           project: this.projectId,
@@ -147,6 +179,14 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    getDuration(task) {
+      if (!task.start_date || !task.due_date) return 'N/A'
+      const start = new Date(task.start_date)
+      const end = new Date(task.due_date)
+      const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
+      if (diff === 1) return '1 day'
+      return `${diff} days`
     },
     taskBarStyle(task) {
       if (!this.dateRange.length) return {}

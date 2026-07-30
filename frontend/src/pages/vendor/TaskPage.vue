@@ -36,6 +36,11 @@
                 <p class="text-gray-700 font-semibold">{{ task.actual_hours || 0 }}h</p>
               </div>
             </div>
+            <div v-if="deliverable" class="mt-3 pt-3 border-t border-gray-100">
+              <a @click="$router.push(`/vendor/deliverable/${deliverable.name}`)" class="text-xs text-blue-600 hover:underline cursor-pointer">
+                View Deliverable: {{ deliverable.title }}
+              </a>
+            </div>
           </div>
 
           <!-- Time Logs -->
@@ -114,6 +119,7 @@
 <script>
 import { FeatherIcon } from 'frappe-ui'
 import { call } from '@/utils/api.js'
+import { store } from '@/data/store.js'
 import StatusBadge from '@/components/StatusBadge.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import FileUpload from '@/components/FileUpload.vue'
@@ -123,7 +129,7 @@ export default {
   components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload },
   data() {
     return {
-      task: null, timeLogs: [], loading: true, updating: false,
+      task: null, deliverable: null, timeLogs: [], loading: true, updating: false,
       showTimeLogModal: false, loggingTime: false,
       timeLogForm: { hours: null, date: new Date().toISOString().split('T')[0], description: '' },
     }
@@ -134,11 +140,12 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [t, l] = await Promise.all([
+        const [t, l, d] = await Promise.all([
           call('project_management.api.client.get_task', { name: this.taskId }),
           call('project_management.api.client.get_time_logs', { task: this.taskId }),
+          call('project_management.api.client.get_deliverable_for_task', { task: this.taskId }),
         ])
-        this.task = t.message; this.timeLogs = l.message || []
+        this.task = t.message; this.timeLogs = l.message || []; this.deliverable = d?.message?.found ? d.message : null
       } catch {} finally { this.loading = false }
     },
     async updateStatus(status) {
@@ -158,6 +165,8 @@ export default {
         this.showTimeLogModal = false
         this.timeLogForm = { hours: null, date: new Date().toISOString().split('T')[0], description: '' }
         await this.loadAll()
+        const hours = await call('project_management.api.client.get_today_hours')
+        store.todayHours = hours.message || 0
       } catch {} finally { this.loggingTime = false }
     },
   },

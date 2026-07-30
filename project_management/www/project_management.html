@@ -15,7 +15,7 @@
 
 {% block script %}
 <script>
-  window.csrf_token = '{{ frappe.session.csrf_token }}';
+  window.csrf_token = '{{ csrf_token }}';
 </script>
 {% for js in get_vite_js() %}
 <script type="module" src="{{ js }}"></script>

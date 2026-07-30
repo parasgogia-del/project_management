@@ -15,6 +15,7 @@
   "start_date",
   "end_date",
   "progress",
+  "raven_workspace",
   "column_break_cvwv",
   "vendors",
   "project_members",
@@ -38,7 +39,7 @@
    "fieldname": "client",
    "fieldtype": "Link",
    "label": "Client",
-   "options": "Customer",
+   "options": "User",
    "reqd": 1
   },
   {
@@ -90,12 +91,18 @@
   {
    "fieldname": "column_break_cvwv",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "raven_workspace",
+   "fieldtype": "Link",
+   "label": "Raven Workspace",
+   "options": "Raven Workspace"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-25 19:09:54.755872",
+ "modified": "2026-07-30 10:44:51.403685",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Info",

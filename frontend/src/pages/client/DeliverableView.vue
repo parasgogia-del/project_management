@@ -42,6 +42,22 @@
             <FileUpload doctype="Deliverable" :docname="deliverableId" />
           </div>
 
+          <!-- Tasks -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-800 mb-3">Tasks</h2>
+            <div v-if="tasks.length === 0" class="text-xs text-gray-400 text-center py-4">No tasks in this deliverable</div>
+            <div v-else class="divide-y divide-gray-50">
+              <div
+                v-for="t in tasks"
+                :key="t.name"
+                class="flex items-center justify-between py-2"
+              >
+                <p class="text-sm text-gray-800 truncate">{{ t.title }}</p>
+                <StatusBadge :status="t.status" />
+              </div>
+            </div>
+          </div>
+
           <!-- Comments -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <CommentSection doctype="Deliverable" :docname="deliverableId" />
@@ -49,14 +65,14 @@
         </div>
 
         <div class="space-y-6">
-          <!-- Review History -->
+          <!-- Review Actions -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Review Actions</h2>
-            <div class="space-y-2">
+            <div v-if="!selectedAction" class="space-y-2">
               <button
                 v-for="action in availableActions"
                 :key="action"
-                @click="performAction(action)"
+                @click="selectedAction = action"
                 :disabled="updating"
                 class="w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors"
                 :class="action === 'Approve' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'"
@@ -65,7 +81,17 @@
               </button>
               <p v-if="!availableActions.length" class="text-xs text-gray-400 text-center">No actions available</p>
             </div>
-            <p v-if="updateError" class="text-xs text-red-500 mt-2">{{ updateError }}</p>
+            <div v-else class="space-y-3">
+              <p class="text-sm font-medium text-gray-700">{{ selectedAction === 'Approve' ? 'Approve this deliverable?' : 'Request changes — describe what needs to change:' }}</p>
+              <textarea v-model="feedbackText" rows="3" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none resize-none" :placeholder="selectedAction === 'Approve' ? 'Optional approval comment...' : 'Describe the changes needed...'" />
+              <div class="flex gap-2">
+                <button @click="performAction(selectedAction)" :disabled="updating || (selectedAction === 'Request Changes' && !feedbackText.trim())" class="flex-1 px-3 py-2 text-xs font-medium text-white rounded-lg" :class="selectedAction === 'Approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'">
+                  {{ updating ? 'Submitting...' : 'Submit' }}
+                </button>
+                <button @click="cancelReview" :disabled="updating" class="px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+              </div>
+              <p v-if="updateError" class="text-xs text-red-500">{{ updateError }}</p>
+            </div>
           </div>
 
           <!-- Progress -->
@@ -93,7 +119,7 @@ import CommentSection from '@/components/CommentSection.vue'
 const ACTIONS = {
   'Draft': [],
   'WIP': [],
-  'Ready for Approval': ['Approve', 'Request Changes'],
+  'Ready for Approval': [],
   'Awaiting Client Review': ['Approve', 'Request Changes'],
   'Approved': [],
   'Changes Requested': [],
@@ -105,6 +131,7 @@ export default {
   data() {
     return {
       deliverable: null, tasks: [], loading: true, updating: false, updateError: '',
+      selectedAction: null, feedbackText: '',
     }
   },
   computed: {
@@ -130,9 +157,19 @@ export default {
     async performAction(action) {
       this.updating = true; this.updateError = ''
       try {
+        if (this.feedbackText.trim()) {
+          await call('project_management.api.client.add_comment', {
+            reference_doctype: 'Deliverable', reference_name: this.deliverableId,
+            content: `**${action}:** ${this.feedbackText.trim()}`,
+          })
+        }
         await call('project_management.api.client.update_deliverable_status', { name: this.deliverableId, action })
+        this.selectedAction = null; this.feedbackText = ''
         await this.loadAll()
       } catch (err) { this.updateError = err.message || 'Failed' } finally { this.updating = false }
+    },
+    cancelReview() {
+      this.selectedAction = null; this.feedbackText = ''; this.updateError = ''
     },
   },
 }

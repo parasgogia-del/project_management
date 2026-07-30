@@ -144,6 +144,69 @@ def update_project(name=None, data=None):
     frappe.db.commit()
     return frappe.get_doc("Project Info", name).as_dict()
 
+@frappe.whitelist(allow_guest=True)
+def invite_project_member(project=None, email=None, role="Client Reviewer", notes=""):
+    if not project or not email:
+        frappe.throw("Project and email are required")
+
+    user = frappe.db.get_value("User", {"email": email}, "name")
+    if not user:
+        frappe.throw(f"No user found with email '{email}'")
+
+    existing = frappe.get_all("Project Member", filters={"parent": project, "user": user}, pluck="name")
+    if existing:
+        frappe.throw("User is already a member of this project")
+
+    doc = frappe.get_doc({
+        "doctype": "Project Member",
+        "parent": project,
+        "parenttype": "Project Info",
+        "parentfield": "project_members",
+        "user": user,
+        "project_role": role,
+        "is_active": 1,
+        "assigned_on": frappe.utils.today(),
+        "notes": notes,
+    })
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return frappe.get_doc("Project Info", project).as_dict()
+
+
+@frappe.whitelist(allow_guest=True)
+def delete_project(name=None):
+    if not name:
+        frappe.throw("Project name is required")
+    if not frappe.db.exists("Project Info", name):
+        frappe.throw("Project not found")
+    frappe.delete_doc("Project Info", name, ignore_permissions=True)
+    frappe.db.commit()
+    return {"status": "ok"}
+
+
+@frappe.whitelist(allow_guest=True)
+def update_task(name=None, data=None):
+    if not name:
+        frappe.throw("Task name is required")
+    if not data:
+        frappe.throw("Data is required")
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+
+    allowed_fields = ["title", "project", "deliverable", "description", "priority", "status",
+                      "estimated_hours", "assigned_to", "assigned_vendor", "start_date", "due_date"]
+    filtered = {k: v for k, v in data.items() if k in allowed_fields}
+
+    doc = frappe.get_doc("Project Task", name)
+    for field, value in filtered.items():
+        doc.set(field, value)
+    doc.flags.ignore_permissions = True
+    doc.save()
+    frappe.db.commit()
+    return doc.as_dict()
+
+
 def _update_child_table(parent_doctype, parent_name, fieldname, child_doctype, rows):
     _skip = {"name", "doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
 
@@ -252,6 +315,7 @@ def get_tasks(project=None, deliverable=None, assigned_to=None):
             "description",
             "assigned_to",
             "assigned_vendor",
+            "is_today_focus",
         ],
         order_by="creation desc",
     )
@@ -297,10 +361,13 @@ def create_time_log(task=None, project=None, date=None, hours=None, description=
     if not task or not hours:
         frappe.throw("Task and hours are required")
 
+    if not project:
+        project = frappe.db.get_value("Project Task", task, "project") or ""
+
     doc = frappe.get_doc({
         "doctype": "Time Log",
         "task": task,
-        "project": project or "",
+        "project": project,
         "project_member": project_member or frappe.session.user,
         "date": date or frappe.utils.today(),
         "hours": float(hours),
@@ -309,6 +376,30 @@ def create_time_log(task=None, project=None, date=None, hours=None, description=
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return doc.as_dict()
+
+@frappe.whitelist(allow_guest=True)
+def toggle_today_focus(name=None):
+    if not name:
+        frappe.throw("Task name is required")
+    doc = frappe.get_doc("Project Task", name)
+    doc.is_today_focus = 0 if doc.is_today_focus else 1
+    doc.flags.ignore_permissions = True
+    doc.save()
+    frappe.db.commit()
+    return {"is_today_focus": doc.is_today_focus}
+
+@frappe.whitelist(allow_guest=True)
+def get_today_hours(user=None):
+    if not user:
+        user = frappe.session.user
+    today = frappe.utils.today()
+    logs = frappe.get_all(
+        "Time Log",
+        filters={"project_member": user, "creation": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]},
+        fields=["hours"],
+        ignore_permissions=True,
+    )
+    return sum(l.hours or 0 for l in logs)
 
 @frappe.whitelist(allow_guest=True)
 def update_task_status(name=None, status=None):
@@ -329,39 +420,22 @@ def update_deliverable_status(name=None, action=None):
     if not name or not action:
         frappe.throw("Name and action are required")
 
-    workflow_name = frappe.db.get_value("Workflow", {"document_type": "Deliverable"}, "name")
-    if not workflow_name:
-        frappe.throw("No workflow found for Deliverable")
+    transitions_map = {
+        "Submit for Approval": "Ready for Approval",
+        "Send for Approval": "Awaiting Client Review",
+        "Approve": "Approved",
+        "Request Changes": "Changes Requested",
+        "Start Rework": "WIP",
+    }
 
-    transitions = frappe.get_all(
-        "Workflow Transition",
-        filters={"parent": workflow_name, "action": action},
-        fields=["state", "next_state"],
-    )
+    next_state = transitions_map.get(action)
+    if not next_state:
+        frappe.throw(f"Invalid action: {action}")
 
-    if not transitions:
-        frappe.throw(f"Invalid workflow action: {action}")
-
-    doc = frappe.get_doc("Deliverable", name)
-    current_state = doc.get("workflow_state") or doc.get("status")
-
-    transition = None
-    for t in transitions:
-        if t.state == current_state:
-            transition = t
-            break
-
-    if not transition:
-        frappe.throw(f"Action '{action}' not valid from current state '{current_state}'")
-
-    workflow = frappe.get_doc("Workflow", workflow_name)
-    workflow_state_field = workflow.workflow_state_field or "workflow_state"
-
-    frappe.db.set_value("Deliverable", name, workflow_state_field, transition.next_state)
-    frappe.db.set_value("Deliverable", name, "status", transition.next_state)
+    frappe.db.set_value("Deliverable", name, "status", next_state)
     frappe.db.commit()
 
-    return {"status": "ok", "workflow_state": transition.next_state}
+    return {"status": "ok", "workflow_state": next_state}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -439,7 +513,16 @@ def add_comment(reference_doctype=None, reference_name=None, content=None):
 
 @frappe.whitelist(allow_guest=True)
 def get_session_user():
-    return frappe.session.user
+    print("Session user:", frappe.session.user)
+    return {
+        "user": frappe.session.user,
+        "roles": frappe.get_roles(),
+    }
+
+
+@frappe.whitelist(methods=["GET"])
+def get_csrf_token():
+    return frappe.sessions.get_csrf_token()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -495,7 +578,8 @@ def get_progress_report(project=None, period="daily"):
     all_tasks = frappe.get_all(
         "Project Task",
         filters=task_filters,
-        fields=["name", "title", "status", "start_date", "due_date", "assigned_to", "estimated_hours", "actual_hours", "project"],
+        fields=["name", "title", "status", "start_date", "due_date", "assigned_to",
+                "estimated_hours", "actual_hours", "project", "creation", "modified"],
     )
 
     total_tasks = len(all_tasks)
@@ -505,6 +589,15 @@ def get_progress_report(project=None, period="daily"):
     overdue_tasks = sum(
         1 for t in all_tasks
         if t.due_date and str(t.due_date) < today and t.status != "Completed"
+    )
+
+    completed_in_period = sum(
+        1 for t in all_tasks
+        if t.status == "Completed" and t.modified and str(t.modified)[:10] >= start
+    )
+    created_in_period = sum(
+        1 for t in all_tasks
+        if t.creation and str(t.creation)[:10] >= start
     )
 
     time_logs = frappe.get_all(
@@ -528,6 +621,8 @@ def get_progress_report(project=None, period="daily"):
     total_deliverables = len(deliverables)
     approved_deliverables = sum(1 for d in deliverables if d.status == "Approved")
 
+    completion_pct = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+
     return {
         "period": period,
         "start_date": start,
@@ -535,6 +630,8 @@ def get_progress_report(project=None, period="daily"):
         "tasks": {
             "total": total_tasks,
             "completed": completed_tasks,
+            "completed_in_period": completed_in_period,
+            "created_in_period": created_in_period,
             "in_progress": in_progress_tasks,
             "blocked": blocked_tasks,
             "overdue": overdue_tasks,
@@ -546,6 +643,7 @@ def get_progress_report(project=None, period="daily"):
             "total": total_deliverables,
             "approved": approved_deliverables,
         },
+        "completion_percentage": completion_pct,
         "recent_tasks": [
             {"name": t.name, "title": t.title, "status": t.status, "assigned_to": t.assigned_to, "project": t.project}
             for t in all_tasks[:10]
@@ -555,3 +653,17 @@ def get_progress_report(project=None, period="daily"):
             for l in time_logs[:10]
         ],
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_deliverable_for_task(task=None):
+    if not task:
+        return {"found": False}
+    parent = frappe.db.get_value("Deliverable Task", {"task": task}, "parent")
+    if not parent:
+        return {"found": False}
+    doc = frappe.db.get_value("Deliverable", parent, ["name", "title", "status"], as_dict=True)
+    if not doc:
+        return {"found": False}
+    doc["found"] = True
+    return doc

@@ -297,6 +297,15 @@ export default {
     async saveProject() {
       this.saving = true
       this.error = ''
+
+      const memberEmails = this.form.project_members.map(m => m.user).filter(Boolean)
+      const uniqueEmails = new Set(memberEmails)
+      if (memberEmails.length !== uniqueEmails.size) {
+        this.error = 'Duplicate team members found. Please remove duplicates before saving.'
+        this.saving = false
+        return
+      }
+
       try {
         if (this.isEdit) {
           await call('project_management.api.client.update_project', {

@@ -97,12 +97,19 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Deliverable *</label>
-            <input v-model="newTask.deliverable" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400" placeholder="Deliverable name" />
+            <select v-model="newTask.deliverable" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white">
+              <option value="">Select deliverable</option>
+              <option v-for="d in projectDeliverables" :key="d.name" :value="d.name">{{ d.title }}</option>
+            </select>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-              <input v-model="newTask.assigned_to" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400" placeholder="User email" />
+              <select v-model="newTask.assigned_to" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white">
+                <option value="">Unassigned</option>
+                <option v-for="member in projectMembers" :key="member" :value="member">{{ member }}</option>
+              </select>
+              <button @click="assignToMe" type="button" class="mt-1 text-xs text-blue-600 hover:text-blue-700">Assign to me</button>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
@@ -161,6 +168,8 @@ export default {
   data() {
     return {
       tasks: [],
+      projectMembers: [],
+      projectDeliverables: [],
       loading: true,
       statusFilter: '',
       priorityFilter: '',
@@ -191,18 +200,24 @@ export default {
     },
   },
   mounted() {
-    this.loadTasks()
+    this.loadAll()
   },
   methods: {
-    async loadTasks() {
+    async loadAll() {
       this.loading = true
       try {
-        const result = await call('project_management.api.client.get_tasks', {
-          project: this.projectId,
-        })
-        this.tasks = result.message || []
+        const [tasksRes, projectRes, deliverablesRes] = await Promise.all([
+          call('project_management.api.client.get_tasks', { project: this.projectId }),
+          call('project_management.api.client.get_project', { name: this.projectId }),
+          call('project_management.api.client.get_deliverables', { project: this.projectId }),
+        ])
+        this.tasks = tasksRes.message || []
+        this.projectMembers = (projectRes.message?.project_members || []).map(m => m.user)
+        this.projectDeliverables = deliverablesRes.message || []
       } catch {
         this.tasks = []
+        this.projectMembers = []
+        this.projectDeliverables = []
       } finally {
         this.loading = false
       }
@@ -218,13 +233,24 @@ export default {
           },
         })
         this.showCreateModal = false
-        this.newTask = { title: '', deliverable: '', assigned_to: '', priority: 'Medium', start_date: '', due_date: '', estimated_hours: null, description: '' }
-        await this.loadTasks()
+        this.resetNewTask()
+        await this.loadAll()
       } catch (err) {
         console.error('Failed to create task', err)
       } finally {
         this.creating = false
       }
+    },
+    async assignToMe() {
+      try {
+        const result = await call('project_management.api.client.get_session_user')
+        this.newTask.assigned_to = result.message
+      } catch {
+        console.error('Failed to get session user')
+      }
+    },
+    resetNewTask() {
+      this.newTask = { title: '', deliverable: '', assigned_to: '', priority: 'Medium', start_date: '', due_date: '', estimated_hours: null, description: '' }
     },
   },
 }
