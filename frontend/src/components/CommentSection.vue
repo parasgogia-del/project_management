@@ -71,7 +71,8 @@
 </template>
 
 <script>
-import { call } from '@/utils/api.js'
+import { frappeRequest } from 'frappe-ui'
+import { useComments } from '@/data/resources'
 
 export default {
   name: 'CommentSection',
@@ -85,6 +86,7 @@ export default {
       newComment: '',
       editingId: null,
       editContent: '',
+      commentsResource: useComments(this.doctype, this.docname),
     }
   },
   mounted() {
@@ -93,11 +95,7 @@ export default {
   methods: {
     async loadComments() {
       try {
-        const result = await call(
-          'project_management.api.client.get_comments',
-          { reference_doctype: this.doctype, reference_name: this.docname }
-        )
-        this.comments = result.message || []
+        this.comments = (await this.commentsResource.fetch()) || []
       } catch {
         this.comments = []
       }
@@ -105,10 +103,14 @@ export default {
     async addComment() {
       if (!this.newComment.trim()) return
       try {
-        await call('project_management.api.client.add_comment', {
-          reference_doctype: this.doctype,
-          reference_name: this.docname,
-          content: this.newComment.trim(),
+        await frappeRequest({
+          url: 'project_management.api.client.add_comment',
+          method: 'POST',
+          params: {
+            reference_doctype: this.doctype,
+            reference_name: this.docname,
+            content: this.newComment.trim(),
+          },
         })
         this.newComment = ''
         await this.loadComments()
@@ -122,9 +124,13 @@ export default {
     },
     async saveEdit(name) {
       try {
-        await call('project_management.api.client.edit_comment', {
-          name,
-          content: this.editContent.trim(),
+        await frappeRequest({
+          url: 'project_management.api.client.edit_comment',
+          method: 'POST',
+          params: {
+            name,
+            content: this.editContent.trim(),
+          },
         })
         this.editingId = null
         await this.loadComments()
@@ -134,7 +140,11 @@ export default {
     },
     async deleteComment(name) {
       try {
-        await call('project_management.api.client.delete_comment', { name })
+        await frappeRequest({
+          url: 'project_management.api.client.delete_comment',
+          method: 'POST',
+          params: { name },
+        })
         await this.loadComments()
       } catch (err) {
         console.error('Failed to delete comment', err)

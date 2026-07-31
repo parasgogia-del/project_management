@@ -17,7 +17,7 @@
           <div class="min-w-0 flex-1">
             <h3 class="text-sm font-semibold text-gray-900 truncate">{{ project.project_name }}</h3>
           </div>
-          <StatusBadge :status="project.status" />
+          <Badge :label="project.status" :color-map="statusColorMap" />
         </div>
         <ProgressBar :value="project.progress || 0" />
         <div class="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
@@ -44,7 +44,7 @@
             <p class="text-sm font-medium text-gray-800">{{ d.title }}</p>
             <p class="text-xs text-gray-400">{{ d.project }} | Due: {{ d.due_date || 'None' }}</p>
           </div>
-          <StatusBadge :status="d.status" />
+          <Badge :label="d.status" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
@@ -52,14 +52,14 @@
 </template>
 
 <script>
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { frappeRequest, Badge } from 'frappe-ui'
+import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
 export default {
   name: 'ClientDashboard',
-  components: { StatusBadge, ProgressBar, EmptyState },
+  components: { Badge, ProgressBar, EmptyState },
   data() {
     return {
       projects: [],
@@ -75,11 +75,11 @@ export default {
       this.loading = true
       try {
         const [pRes, dRes] = await Promise.all([
-          call('project_management.api.client.get_projects'),
-          call('project_management.api.client.get_deliverables'),
+          frappeRequest({ url: 'project_management.api.client.get_projects', method: 'POST' }),
+          frappeRequest({ url: 'project_management.api.client.get_deliverables', method: 'POST' }),
         ])
-        this.projects = pRes.message || []
-        this.allDeliverables = dRes.message || []
+        this.projects = pRes || []
+        this.allDeliverables = dRes || []
       } catch {} finally { this.loading = false }
     },
   },

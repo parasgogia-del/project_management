@@ -11,31 +11,15 @@
         <p class="text-center text-xs text-gray-400 mb-6">Sign in to your account</p>
 
         <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
-            <input
-              v-model="email"
-              type="email"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Password</label>
-            <input
-              v-model="password"
-              type="password"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-              placeholder="Password"
-            />
-          </div>
-          <button
+          <Input v-model="email" type="email" label="Email" placeholder="you@example.com" />
+          <Input v-model="password" type="password" label="Password" placeholder="Password" />
+          <Button
+            appearance="primary"
+            class="w-full"
+            :loading="loading"
+            :loading-text="loading ? 'Signing in...' : null"
             @click="login"
-            :disabled="loading"
-            class="w-full py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {{ loading ? 'Signing in...' : 'Sign In' }}
-          </button>
+          >Sign In</Button>
         </div>
 
         <p v-if="error" class="text-xs text-red-500 text-center mt-3">{{ error }}</p>
@@ -45,11 +29,11 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
+import { FeatherIcon, frappeRequest, Input, Button } from 'frappe-ui'
 
 export default {
   name: 'Login',
-  components: { FeatherIcon },
+  components: { FeatherIcon, Input, Button },
   data() {
     return {
       email: '',
@@ -63,9 +47,10 @@ export default {
       this.error = ''
       this.loading = true
       try {
-        await frappe.call('login', {
-          usr: this.email,
-          pwd: this.password,
+        await frappeRequest({
+          url: 'login',
+          method: 'POST',
+          params: { usr: this.email, pwd: this.password },
         })
         window.location.reload()
       } catch (err) {

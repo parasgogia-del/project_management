@@ -1,23 +1,17 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <h1 class="text-xl font-bold text-gray-900">Gantt Chart</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
-      <button
-        @click="loadTasks"
-        class="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-      >
-        <feather-icon name="refresh-cw" class="w-3.5 h-3.5 inline mr-1" />
+      <Button appearance="secondary" icon-left="refresh-cw" @click="loadTasks">
         Refresh
-      </button>
+      </Button>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="5" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <div v-else-if="tasks.length === 0" class="bg-white rounded-xl border border-gray-200">
       <EmptyState icon="grid" title="No tasks for Gantt chart" description="Add tasks with dates to see them here" />
@@ -106,14 +100,13 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, Button, LoadingIndicator } from 'frappe-ui'
+import { useGanttTasks } from '@/data/resources'
 import EmptyState from '@/components/EmptyState.vue'
 
 export default {
   name: 'GanttChart',
-  components: { FeatherIcon, SkeletonLoader, EmptyState },
+  components: { FeatherIcon, Button, LoadingIndicator, EmptyState },
   data() {
     return {
       tasks: [],
@@ -170,10 +163,7 @@ export default {
     async loadTasks(showLoader = true) {
       if (showLoader) this.loading = true
       try {
-        const result = await call('project_management.api.client.get_gantt_tasks', {
-          project: this.projectId,
-        })
-        this.tasks = result.message || []
+        this.tasks = (await useGanttTasks(this.projectId).fetch()) || []
       } catch {
         this.tasks = []
       } finally {

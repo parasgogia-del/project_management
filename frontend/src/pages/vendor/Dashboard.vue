@@ -41,8 +41,8 @@
             <p class="text-xs text-gray-400">{{ task.project }} | Due: {{ task.due_date || 'None' }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <StatusBadge :status="task.priority" />
-            <StatusBadge :status="task.status" />
+            <Badge :label="task.priority" :color-map="statusColorMap" />
+            <Badge :label="task.status" :color-map="statusColorMap" />
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@
             <p class="text-sm font-medium text-gray-800">{{ d.title }}</p>
             <p class="text-xs text-gray-400">{{ d.project }} | Due: {{ d.due_date || 'None' }}</p>
           </div>
-          <StatusBadge :status="d.status" />
+          <Badge :label="d.status" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
           <p class="text-sm font-medium text-gray-800">{{ p.project_name }}</p>
           <ProgressBar :value="p.progress || 0" />
           <div class="flex items-center justify-between mt-2">
-            <StatusBadge :status="p.status" />
+            <Badge :label="p.status" :color-map="statusColorMap" />
             <span class="text-xs text-gray-400">{{ p.client }}</span>
           </div>
         </div>
@@ -91,13 +91,13 @@
 </template>
 
 <script>
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { frappeRequest, Badge } from 'frappe-ui'
+import { useVendorTasks, useVendorDeliverables, useVendorProjects } from '@/data/resources'
 import ProgressBar from '@/components/ProgressBar.vue'
 
 export default {
   name: 'VendorDashboard',
-  components: { StatusBadge, ProgressBar },
+  components: { Badge, ProgressBar },
   data() {
     return {
       tasks: [],
@@ -123,16 +123,16 @@ export default {
   methods: {
     async loadData() {
       try {
-        const userRes = await call('project_management.api.client.get_session_user')
-        this.vendorName = userRes.message
+        const userRes = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
+        this.vendorName = userRes
         const [t, d, p] = await Promise.all([
-          call('project_management.api.vendor.get_vendor_tasks', { vendor_name: this.vendorName }),
-          call('project_management.api.vendor.get_vendor_deliverables', { vendor_name: this.vendorName }),
-          call('project_management.api.vendor.get_vendor_projects', { vendor_name: this.vendorName }),
+          useVendorTasks(this.vendorName).fetch(),
+          useVendorDeliverables(this.vendorName).fetch(),
+          useVendorProjects(this.vendorName).fetch(),
         ])
-        this.tasks = t.message || []
-        this.deliverables = d.message || []
-        this.vendorProjects = p.message || []
+        this.tasks = t || []
+        this.deliverables = d || []
+        this.vendorProjects = p || []
       } catch {}
     },
   },

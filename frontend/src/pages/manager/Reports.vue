@@ -1,30 +1,27 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">Reports</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
     </div>
 
-    <!-- Period toggle -->
     <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
-      <button
+      <Button
+        appearance="minimal"
+        :active="period === 'daily'"
         @click="period = 'daily'"
-        class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors"
-        :class="period === 'daily' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'"
-      >Daily</button>
-      <button
+      >Daily</Button>
+      <Button
+        appearance="minimal"
+        :active="period === 'weekly'"
         @click="period = 'weekly'"
-        class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors"
-        :class="period === 'weekly' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'"
-      >Weekly</button>
+      >Weekly</Button>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="5" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="report">
       <!-- Summary cards -->
@@ -94,7 +91,7 @@
               <p class="text-sm text-gray-800">{{ t.title }}</p>
               <p class="text-xs text-gray-400">{{ t.assigned_to || 'Unassigned' }}</p>
             </div>
-            <StatusBadge :status="t.status" />
+            <Badge :label="t.status" :color-map="statusColorMap" />
           </div>
         </div>
         <p v-else class="text-xs text-gray-400 text-center py-4">No tasks</p>
@@ -126,14 +123,13 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, Button, Badge, LoadingIndicator } from 'frappe-ui'
+import { useProgressReport } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 
 export default {
   name: 'Reports',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator },
   data() {
     return {
       report: null,
@@ -158,11 +154,7 @@ export default {
     async loadReport() {
       this.loading = true
       try {
-        const result = await call('project_management.api.client.get_progress_report', {
-          project: this.projectId,
-          period: this.period,
-        })
-        this.report = result.message || null
+        this.report = (await useProgressReport(this.projectId, this.period).fetch()) || null
       } catch {
         this.report = null
       } finally {

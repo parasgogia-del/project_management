@@ -1,47 +1,30 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <h1 class="text-xl font-bold text-gray-900">Tasks</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
-      <button
-        @click="showCreateModal = true"
-        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        <feather-icon name="plus" class="w-4 h-4" />
-        New Task
-      </button>
+      <Button appearance="primary" icon-left="plus" @click="showCreateModal = true">New Task</Button>
     </div>
 
-    <!-- Filters -->
     <div class="flex items-center gap-3">
-      <select
+      <Input
+        type="select"
         v-model="statusFilter"
-        class="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none"
-      >
-        <option value="">All Status</option>
-        <option value="Open">Open</option>
-        <option value="Working">Working</option>
-        <option value="Blocked">Blocked</option>
-        <option value="Completed">Completed</option>
-      </select>
-      <select
+        :options="statusFilterOptions"
+        class="w-40"
+      />
+      <Input
+        type="select"
         v-model="priorityFilter"
-        class="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none"
-      >
-        <option value="">All Priority</option>
-        <option value="Low">Low</option>
-        <option value="Medium">Medium</option>
-        <option value="High">High</option>
-        <option value="Critical">Critical</option>
-      </select>
+        :options="priorityFilterOptions"
+        class="w-40"
+      />
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <div v-else-if="filteredTasks.length === 0" class="bg-white rounded-xl border border-gray-200">
       <EmptyState icon="list" title="No tasks found" description="Create your first task to get started" />
@@ -70,8 +53,8 @@
               <p class="text-sm font-medium text-gray-800">{{ task.title }}</p>
               <p class="text-xs text-gray-400">{{ task.deliverable }}</p>
             </td>
-            <td class="px-5 py-3"><StatusBadge :status="task.status" /></td>
-            <td class="px-5 py-3"><StatusBadge :status="task.priority" /></td>
+            <td class="px-5 py-3"><Badge :label="task.status" :color-map="statusColorMap" /></td>
+            <td class="px-5 py-3"><Badge :label="task.priority" :color-map="statusColorMap" /></td>
             <td class="px-5 py-3 text-xs text-gray-600">{{ task.assigned_to || '-' }}</td>
             <td class="px-5 py-3 text-xs text-gray-600">{{ task.due_date || '-' }}</td>
             <td class="px-5 py-3 text-xs text-gray-600">
@@ -82,89 +65,64 @@
       </table>
     </div>
 
-    <!-- Create Task Modal -->
-    <div
-      v-if="showCreateModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      @click.self="showCreateModal = false"
-    >
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Create Task</h2>
+    <Dialog v-model="showCreateModal" :options="{ title: 'Create Task', size: 'lg' }">
+      <template #body-content>
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input v-model="newTask.title" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400" placeholder="Task title" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Deliverable *</label>
-            <select v-model="newTask.deliverable" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white">
-              <option value="">Select deliverable</option>
-              <option v-for="d in projectDeliverables" :key="d.name" :value="d.name">{{ d.title }}</option>
-            </select>
-          </div>
+          <Input v-model="newTask.title" label="Title *" placeholder="Task title" />
+          <Input
+            type="select"
+            v-model="newTask.deliverable"
+            label="Deliverable *"
+            :options="deliverableOptions"
+          />
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-              <select v-model="newTask.assigned_to" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white">
-                <option value="">Unassigned</option>
-                <option v-for="member in projectMembers" :key="member" :value="member">{{ member }}</option>
-              </select>
-              <button @click="assignToMe" type="button" class="mt-1 text-xs text-blue-600 hover:text-blue-700">Assign to me</button>
+              <Input
+                type="select"
+                v-model="newTask.assigned_to"
+                label="Assigned To"
+                :options="memberOptions"
+              />
+              <Button appearance="minimal" @click="assignToMe" class="mt-1">Assign to me</Button>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select v-model="newTask.priority" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-                <option>Critical</option>
-              </select>
-            </div>
+            <Input
+              type="select"
+              v-model="newTask.priority"
+              label="Priority"
+              :options="priorityOptions"
+            />
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input v-model="newTask.start_date" type="date" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-              <input v-model="newTask.due_date" type="date" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
-            </div>
+            <Input type="date" v-model="newTask.start_date" label="Start Date" />
+            <Input type="date" v-model="newTask.due_date" label="Due Date" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
-            <input v-model.number="newTask.estimated_hours" type="number" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="newTask.description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none resize-none" />
-          </div>
+          <Input v-model.number="newTask.estimated_hours" type="number" label="Estimated Hours" />
+          <Input v-model="newTask.description" type="textarea" :rows="2" label="Description" />
         </div>
-        <div class="flex justify-end gap-3 mt-6">
-          <button @click="showCreateModal = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button
-            @click="createTask"
-            :disabled="!newTask.title || !newTask.deliverable || creating"
-            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {{ creating ? 'Creating...' : 'Create Task' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
+      <template #actions="{ close }">
+        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button
+          appearance="primary"
+          :disabled="!newTask.title || !newTask.deliverable"
+          :loading="creating"
+          :loading-text="creating ? 'Creating...' : null"
+          @click="createTask"
+        >Create Task</Button>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator, Dialog, Input } from 'frappe-ui'
+import { useTasks, useProject, useDeliverables } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import EmptyState from '@/components/EmptyState.vue'
 
 export default {
   name: 'TaskList',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, EmptyState },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, Dialog, Input, EmptyState },
   data() {
     return {
       tasks: [],
@@ -191,6 +149,39 @@ export default {
     projectId() {
       return this.$route.params.id
     },
+    statusFilterOptions() {
+      return [
+        { label: 'All Status', value: '' },
+        { label: 'Open', value: 'Open' },
+        { label: 'Working', value: 'Working' },
+        { label: 'Blocked', value: 'Blocked' },
+        { label: 'Completed', value: 'Completed' },
+      ]
+    },
+    priorityFilterOptions() {
+      return [
+        { label: 'All Priority', value: '' },
+        { label: 'Low', value: 'Low' },
+        { label: 'Medium', value: 'Medium' },
+        { label: 'High', value: 'High' },
+        { label: 'Critical', value: 'Critical' },
+      ]
+    },
+    deliverableOptions() {
+      return [
+        { label: 'Select deliverable', value: '' },
+        ...this.projectDeliverables.map(d => ({ label: d.title, value: d.name })),
+      ]
+    },
+    memberOptions() {
+      return [
+        { label: 'Unassigned', value: '' },
+        ...this.projectMembers.map(member => ({ label: member, value: member })),
+      ]
+    },
+    priorityOptions() {
+      return ['Low', 'Medium', 'High', 'Critical']
+    },
     filteredTasks() {
       return this.tasks.filter(t => {
         const matchStatus = !this.statusFilter || t.status === this.statusFilter
@@ -207,13 +198,13 @@ export default {
       this.loading = true
       try {
         const [tasksRes, projectRes, deliverablesRes] = await Promise.all([
-          call('project_management.api.client.get_tasks', { project: this.projectId }),
-          call('project_management.api.client.get_project', { name: this.projectId }),
-          call('project_management.api.client.get_deliverables', { project: this.projectId }),
+          useTasks({ project: this.projectId }).fetch(),
+          useProject(this.projectId).fetch(),
+          useDeliverables(this.projectId).fetch(),
         ])
-        this.tasks = tasksRes.message || []
-        this.projectMembers = (projectRes.message?.project_members || []).map(m => m.user)
-        this.projectDeliverables = deliverablesRes.message || []
+        this.tasks = tasksRes || []
+        this.projectMembers = (projectRes?.project_members || []).map(m => m.user)
+        this.projectDeliverables = deliverablesRes || []
       } catch {
         this.tasks = []
         this.projectMembers = []
@@ -225,11 +216,15 @@ export default {
     async createTask() {
       this.creating = true
       try {
-        await call('project_management.api.client.create_task', {
-          data: {
-            ...this.newTask,
-            project: this.projectId,
-            status: 'Open',
+        await frappeRequest({
+          url: 'project_management.api.client.create_task',
+          method: 'POST',
+          params: {
+            data: {
+              ...this.newTask,
+              project: this.projectId,
+              status: 'Open',
+            },
           },
         })
         this.showCreateModal = false
@@ -243,8 +238,7 @@ export default {
     },
     async assignToMe() {
       try {
-        const result = await call('project_management.api.client.get_session_user')
-        this.newTask.assigned_to = result.message
+        this.newTask.assigned_to = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
       } catch {
         console.error('Failed to get session user')
       }

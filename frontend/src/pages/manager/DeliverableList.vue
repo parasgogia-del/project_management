@@ -1,16 +1,14 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">Deliverables</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <div v-else-if="deliverables.length === 0" class="bg-white rounded-xl border border-gray-200">
       <EmptyState
@@ -42,7 +40,7 @@
               <p class="text-sm font-medium text-gray-800">{{ d.title }}</p>
               <p class="text-xs text-gray-400">{{ d.description?.slice(0, 60) || 'No description' }}</p>
             </td>
-            <td class="px-5 py-3"><StatusBadge :status="d.status" /></td>
+            <td class="px-5 py-3"><Badge :label="d.status" :color-map="statusColorMap" /></td>
             <td class="px-5 py-3 w-40">
               <ProgressBar :value="d.progress || 0" />
               <p class="text-[10px] text-gray-400 mt-0.5">{{ d.completed_tasks || 0 }}/{{ d.total_tasks || 0 }} tasks</p>
@@ -50,17 +48,17 @@
             <td class="px-5 py-3 text-xs text-gray-600">{{ d.due_date || '-' }}</td>
             <td class="px-5 py-3">
               <div class="flex -space-x-1">
-                <div
+                <Avatar
                   v-for="(m, i) in (d.members || []).slice(0, 3)"
                   :key="i"
-                  class="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center"
+                  :label="m"
+                  size="sm"
+                  class="ring-2 ring-white"
                   :title="m"
-                >
-                  <span class="text-[8px] font-medium text-blue-700">{{ m?.split('@')[0]?.slice(0, 2)?.toUpperCase() }}</span>
-                </div>
+                />
                 <div
                   v-if="(d.members || []).length > 3"
-                  class="w-6 h-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center"
+                  class="w-5 h-5 rounded-full bg-gray-100 ring-2 ring-white flex items-center justify-center"
                 >
                   <span class="text-[8px] font-medium text-gray-500">+{{ d.members.length - 3 }}</span>
                 </div>
@@ -74,16 +72,15 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { FeatherIcon, Button, Badge, Avatar, LoadingIndicator } from 'frappe-ui'
+import { useDeliverablesWithDetails } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
 export default {
   name: 'DeliverableList',
-  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, EmptyState },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, ProgressBar, EmptyState },
   data() {
     return {
       deliverables: [],
@@ -102,10 +99,7 @@ export default {
     async loadDeliverables() {
       this.loading = true
       try {
-        const result = await call('project_management.api.client.get_deliverables_with_details', {
-          project: this.projectId,
-        })
-        this.deliverables = result.message || []
+        this.deliverables = (await useDeliverablesWithDetails(this.projectId).fetch()) || []
       } catch {
         this.deliverables = []
       } finally {

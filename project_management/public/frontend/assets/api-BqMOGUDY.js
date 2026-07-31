@@ -1,1 +1,0 @@
-var l=(r,s,e)=>new Promise((u,c)=>{var m=a=>{try{t(e.next(a))}catch(o){c(o)}},n=a=>{try{t(e.throw(a))}catch(o){c(o)}},t=a=>a.done?u(a.value):Promise.resolve(a.value).then(m,n);t((e=e.apply(r,s)).next())});import{y as p}from"./index-B-JqxQW5.js";function y(e){return l(this,arguments,function*(r,s={}){return{message:yield p({url:r,method:"POST",params:s})}})}export{y as c};

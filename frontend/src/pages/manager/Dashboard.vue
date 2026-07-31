@@ -6,13 +6,9 @@
         <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
         <p class="text-sm text-gray-500 mt-0.5">Overview of your projects and tasks</p>
       </div>
-      <router-link
-        to="/project/new"
-        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        <feather-icon name="plus" class="w-4 h-4" />
+      <Button route="/project/new" appearance="primary" icon-left="plus">
         New Project
-      </router-link>
+      </Button>
     </div>
 
     <!-- Stat cards -->
@@ -57,7 +53,7 @@
                   <p class="text-sm font-medium text-gray-800 truncate">{{ project.project_name }}</p>
                   <p class="text-xs text-gray-400">{{ project.client }}</p>
                 </div>
-                <StatusBadge :status="project.status" />
+                <Badge :label="project.status" :color-map="statusColorMap" />
               </div>
               <ProgressBar :value="project.progress || 0" />
             </div>
@@ -69,20 +65,16 @@
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold text-gray-800">Progress Report</h2>
             <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-              <button
+              <Button
+                appearance="minimal"
+                :active="reportPeriod === 'daily'"
                 @click="reportPeriod = 'daily'"
-                class="px-3 py-1 text-xs font-medium rounded-md transition-colors"
-                :class="reportPeriod === 'daily' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'"
-              >
-                Daily
-              </button>
-              <button
+              >Daily</Button>
+              <Button
+                appearance="minimal"
+                :active="reportPeriod === 'weekly'"
                 @click="reportPeriod = 'weekly'"
-                class="px-3 py-1 text-xs font-medium rounded-md transition-colors"
-                :class="reportPeriod === 'weekly' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'"
-              >
-                Weekly
-              </button>
+              >Weekly</Button>
             </div>
           </div>
 
@@ -118,7 +110,7 @@
               <p class="text-[10px] text-gray-500">Completion</p>
             </div>
           </div>
-          <SkeletonLoader v-else-if="reportLoading" :lines="3" />
+          <LoadingIndicator v-else-if="reportLoading" class="mx-auto my-8 h-6 w-6 text-gray-400" />
         </div>
 
         <!-- Recent Tasks -->
@@ -141,8 +133,8 @@
                 <p class="text-xs text-gray-400">{{ task.project }}</p>
               </div>
               <div class="flex items-center gap-2 ml-4">
-                <StatusBadge :status="task.priority" />
-                <StatusBadge :status="task.status" />
+                <Badge :label="task.priority" :color-map="statusColorMap" />
+                <Badge :label="task.status" :color-map="statusColorMap" />
               </div>
             </div>
           </div>
@@ -205,16 +197,15 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator } from 'frappe-ui'
+import { useTasks } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import ActivityTimeline from '@/components/ActivityTimeline.vue'
 
 export default {
   name: 'ManagerDashboard',
-  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, ActivityTimeline },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, ProgressBar, ActivityTimeline },
   data() {
     return {
       projects: [],
@@ -228,7 +219,7 @@ export default {
         { label: 'Active Projects', value: 0, icon: 'play-circle', bgColor: 'bg-green-50', iconColor: 'text-green-600' },
         { label: 'Completed', value: 0, icon: 'check-circle', bgColor: 'bg-emerald-50', iconColor: 'text-emerald-600' },
         { label: 'Delayed Tasks', value: 0, icon: 'alert-circle', bgColor: 'bg-red-50', iconColor: 'text-red-600' },
-        { label: 'Pending Deliverables', value: 0, icon: 'package', bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+        { label: 'Pending Tasks', value: 0, icon: 'package', bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
         { label: 'Total Tasks', value: 0, icon: 'list', bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
       ],
     }
@@ -252,16 +243,15 @@ export default {
     },
     async loadProjects() {
       try {
-        const result = await call('project_management.api.client.get_projects')
-        this.projects = result.message || []
+        const result = await frappeRequest({ url: 'project_management.api.client.get_projects', method: 'POST' })
+        this.projects = result || []
       } catch {
         this.projects = []
       }
     },
     async loadTasks() {
       try {
-        const result = await call('project_management.api.client.get_tasks')
-        this.allTasks = result.message || []
+        this.allTasks = (await useTasks().fetch()) || []
       } catch {
         this.allTasks = []
       }
@@ -269,10 +259,12 @@ export default {
     async loadReport() {
       this.reportLoading = true
       try {
-        const result = await call('project_management.api.client.get_progress_report', {
-          period: this.reportPeriod,
+        const result = await frappeRequest({
+          url: 'project_management.api.client.get_progress_report',
+          method: 'POST',
+          params: { period: this.reportPeriod },
         })
-        this.report = result.message || null
+        this.report = result || null
       } catch {
         this.report = null
       } finally {

@@ -1,16 +1,14 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ task?.title || 'Loading...' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ task?.project }}</p>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="task">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -18,8 +16,8 @@
           <!-- Task Info -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center gap-3 mb-4">
-              <StatusBadge :status="task.status" />
-              <StatusBadge :status="task.priority" />
+              <Badge :label="task.status" :color-map="statusColorMap" />
+              <Badge :label="task.priority" :color-map="statusColorMap" />
             </div>
             <p class="text-sm text-gray-600">{{ task.description || 'No description' }}</p>
             <div class="grid grid-cols-3 gap-4 mt-4 text-sm">
@@ -47,7 +45,7 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-sm font-semibold text-gray-800">Time Logs</h2>
-              <button @click="showTimeLogModal = true" class="text-xs font-medium text-blue-600 hover:text-blue-700">+ Log Time</button>
+              <Button appearance="minimal" icon-left="plus" @click="showTimeLogModal = true">Log Time</Button>
             </div>
             <div v-if="timeLogs.length === 0" class="text-xs text-gray-400 text-center py-4">No time logged</div>
             <div v-else class="space-y-2">
@@ -69,31 +67,38 @@
         <div class="space-y-6">
           <!-- Today's Focus Toggle -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <button
+            <Button
+              appearance="minimal"
+              :active="task.is_today_focus"
+              :loading="focusing"
               @click="toggleFocus"
-              :disabled="focusing"
-              class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-              :class="task.is_today_focus ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-transparent'"
+              class="w-full"
             >
-              <span class="text-lg">{{ task.is_today_focus ? '\u2605' : '\u2606' }}</span>
-              {{ task.is_today_focus ? 'In Today\'s Focus' : 'Add to Today\'s Focus' }}
-            </button>
+              <span class="flex items-center justify-center gap-2">
+                <span class="text-lg" :class="task.is_today_focus ? 'text-yellow-500' : ''">{{ task.is_today_focus ? '\u2605' : '\u2606' }}</span>
+                {{ task.is_today_focus ? 'In Today\'s Focus' : 'Add to Today\'s Focus' }}
+              </span>
+            </Button>
           </div>
 
           <!-- Quick Status Update -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Quick Status</h2>
             <div class="space-y-2">
-              <button
+              <Button
                 v-for="s in ['Open', 'Working', 'Blocked', 'Completed']"
                 :key="s"
                 @click="updateStatus(s)"
                 :disabled="task.status === s || updating"
-                class="w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors text-left"
-                :class="task.status === s ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'"
+                appearance="minimal"
+                :active="task.status === s"
+                class="w-full"
               >
-                {{ s }} <span v-if="task.status === s" class="text-[10px]">(current)</span>
-              </button>
+                <span class="flex w-full items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" :class="statusDotColor(s)" />
+                  {{ s }} <span v-if="task.status === s" class="ml-auto text-[10px]">(current)</span>
+                </span>
+              </Button>
             </div>
           </div>
 
@@ -105,46 +110,37 @@
       </div>
     </template>
 
-    <!-- Time Log Modal -->
-    <div v-if="showTimeLogModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="showTimeLogModal = false">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Log Time</h2>
+    <Dialog v-model="showTimeLogModal" :options="{ title: 'Log Time', size: 'sm' }">
+      <template #body-content>
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Hours *</label>
-            <input v-model.number="timeLogForm.hours" type="number" step="0.25" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input v-model="timeLogForm.date" type="date" :min="today" :max="today" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="timeLogForm.description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none resize-none" />
-          </div>
+          <Input v-model.number="timeLogForm.hours" type="number" label="Hours *" step="0.25" />
+          <Input v-model="timeLogForm.date" type="date" label="Date" :min="today" :max="today" />
+          <Input v-model="timeLogForm.description" type="textarea" :rows="2" label="Description" />
         </div>
-        <div class="flex justify-end gap-3 mt-6">
-          <button @click="showTimeLogModal = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg">Cancel</button>
-          <button @click="createTimeLog" :disabled="!timeLogForm.hours || loggingTime" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-            {{ loggingTime ? 'Saving...' : 'Log Time' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
+      <template #actions="{ close }">
+        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button
+          appearance="primary"
+          :disabled="!timeLogForm.hours"
+          :loading="loggingTime"
+          :loading-text="loggingTime ? 'Saving...' : null"
+          @click="createTimeLog"
+        >Log Time</Button>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator, Dialog, Input } from 'frappe-ui'
+import { useTask, useTimeLogs } from '@/data/resources'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 export default {
   name: 'MemberTaskPage',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, Dialog, Input, FileUpload, CommentSection },
   data() {
     return {
       task: null,
@@ -168,40 +164,48 @@ export default {
       this.loading = true
       try {
         const [t, l, d] = await Promise.all([
-          call('project_management.api.client.get_task', { name: this.taskId }),
-          call('project_management.api.client.get_time_logs', { task: this.taskId }),
-          call('project_management.api.client.get_deliverable_for_task', { task: this.taskId }),
+          useTask(this.taskId).fetch(),
+          useTimeLogs(this.taskId).fetch(),
+          frappeRequest({ url: 'project_management.api.client.get_deliverable_for_task', method: 'POST', params: { task: this.taskId } }),
         ])
-        this.task = t.message
-        this.timeLogs = l.message || []
-        this.deliverable = d?.message?.found ? d.message : null
+        this.task = t
+        this.timeLogs = l || []
+        this.deliverable = d?.found ? d : null
       } catch {} finally { this.loading = false }
     },
     async toggleFocus() {
       this.focusing = true
       try {
-        const res = await call('project_management.api.client.toggle_today_focus', { name: this.taskId })
-        this.task.is_today_focus = res.message.is_today_focus
+        const res = await frappeRequest({ url: 'project_management.api.client.toggle_today_focus', method: 'POST', params: { name: this.taskId } })
+        this.task.is_today_focus = res.is_today_focus
       } catch {} finally { this.focusing = false }
     },
     async updateStatus(status) {
       this.updating = true
       try {
-        await call('project_management.api.client.update_task_status', { name: this.taskId, status })
+        await frappeRequest({ url: 'project_management.api.client.update_task_status', method: 'POST', params: { name: this.taskId, status } })
         await this.loadAll()
       } catch {} finally { this.updating = false }
     },
     async createTimeLog() {
       this.loggingTime = true
       try {
-        await call('project_management.api.client.create_time_log', {
-          task: this.taskId, project: this.task.project,
-          hours: this.timeLogForm.hours, description: this.timeLogForm.description,
+        await frappeRequest({
+          url: 'project_management.api.client.create_time_log',
+          method: 'POST',
+          params: {
+            task: this.taskId, project: this.task.project,
+            hours: this.timeLogForm.hours, description: this.timeLogForm.description,
+          },
         })
         this.showTimeLogModal = false
         this.timeLogForm = { hours: null, date: new Date().toISOString().split('T')[0], description: '' }
         await this.loadAll()
       } catch {} finally { this.loggingTime = false }
+    },
+    statusDotColor(status) {
+      const colors = { Open: 'bg-gray-400', Working: 'bg-blue-500', Blocked: 'bg-red-500', Completed: 'bg-green-500' }
+      return colors[status] || 'bg-gray-400'
     },
   },
 }

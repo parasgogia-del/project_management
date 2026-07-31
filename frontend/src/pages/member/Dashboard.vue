@@ -40,7 +40,7 @@
             <p class="text-sm font-medium text-gray-800">{{ task.title }}</p>
             <p class="text-xs text-gray-400">{{ task.project }}</p>
           </div>
-          <StatusBadge :status="task.status" />
+          <Badge :label="task.status" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
@@ -55,20 +55,22 @@
           class="flex items-center justify-between py-2.5 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
         >
           <div class="flex items-center gap-3 min-w-0 flex-1" @click="$router.push(`/member/task/${task.name}`)">
-            <button
+            <Button
+              appearance="minimal"
               @click.stop="toggleFocus(task)"
-              class="flex-shrink-0 text-lg leading-none transition-colors"
-              :class="task.is_today_focus ? 'text-yellow-500' : 'text-gray-300 hover:text-gray-400'"
               :title="task.is_today_focus ? 'Remove from today' : 'Add to today'"
-            >&#9733;</button>
+              class="flex-shrink-0"
+            >
+              <span class="text-lg leading-none" :class="task.is_today_focus ? 'text-yellow-500' : 'text-gray-300'">&#9733;</span>
+            </Button>
             <div class="min-w-0">
               <p class="text-sm text-gray-800 truncate">{{ task.title }}</p>
               <p class="text-xs text-gray-400">{{ task.project }} | Due: {{ task.due_date || 'None' }}</p>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <StatusBadge :status="task.priority" />
-            <StatusBadge :status="task.status" />
+            <Badge :label="task.priority" :color-map="statusColorMap" />
+            <Badge :label="task.status" :color-map="statusColorMap" />
           </div>
         </div>
       </div>
@@ -84,7 +86,7 @@
           class="flex items-center justify-between py-2"
         >
           <p class="text-sm text-gray-600 line-through">{{ task.title }}</p>
-          <StatusBadge status="Completed" />
+          <Badge label="Completed" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
@@ -92,12 +94,12 @@
 </template>
 
 <script>
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { frappeRequest, Badge, Button } from 'frappe-ui'
+import { useTasks } from '@/data/resources'
 
 export default {
   name: 'MemberDashboard',
-  components: { StatusBadge },
+  components: { Badge, Button },
   data() {
     return {
       myTasks: [],
@@ -119,22 +121,26 @@ export default {
   methods: {
     async loadTasks() {
       try {
-        const userRes = await call('project_management.api.client.get_session_user')
-        this.sessionUser = userRes.message.user
+        const userRes = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
+        this.sessionUser = userRes.user
         const [tasksRes, hoursRes] = await Promise.all([
-          call('project_management.api.client.get_tasks', { assigned_to: this.sessionUser }),
-          call('project_management.api.client.get_today_hours'),
+          useTasks({ assigned_to: this.sessionUser }).fetch(),
+          frappeRequest({ url: 'project_management.api.client.get_today_hours', method: 'POST' }),
         ])
-        this.myTasks = tasksRes.message || []
-        this.todayHours = hoursRes.message || 0
+        this.myTasks = tasksRes || []
+        this.todayHours = hoursRes || 0
       } catch {
         this.myTasks = []
       }
     },
     async toggleFocus(task) {
       try {
-        const res = await call('project_management.api.client.toggle_today_focus', { name: task.name })
-        task.is_today_focus = res.message.is_today_focus
+        const res = await frappeRequest({
+          url: 'project_management.api.client.toggle_today_focus',
+          method: 'POST',
+          params: { name: task.name },
+        })
+        task.is_today_focus = res.is_today_focus
       } catch {}
     },
   },

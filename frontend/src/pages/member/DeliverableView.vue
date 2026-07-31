@@ -1,18 +1,16 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ deliverable?.title || 'Loading...' }}</h1>
-          <StatusBadge v-if="deliverable" :status="deliverable.status" />
+          <Badge v-if="deliverable" :label="deliverable.status" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="deliverable">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -49,16 +47,14 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Actions</h2>
             <div class="space-y-2">
-              <button
+              <Button
                 v-for="action in availableActions"
                 :key="action"
                 @click="performAction(action)"
                 :disabled="updating"
-                class="w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors"
-                :class="actionClasses(action)"
-              >
-                {{ action }}
-              </button>
+                appearance="primary"
+                class="w-full"
+              >{{ action }}</Button>
               <p v-if="availableActions.length === 0 && !updating" class="text-xs text-gray-400 text-center">No actions available</p>
               <p v-if="updateError" class="text-xs text-red-500">{{ updateError }}</p>
             </div>
@@ -75,7 +71,7 @@
                 class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 rounded transition-colors"
               >
                 <p class="text-xs text-gray-800 truncate">{{ t.title }}</p>
-                <StatusBadge :status="t.status" />
+                <Badge :label="t.status" :color-map="statusColorMap" />
               </div>
             </div>
           </div>
@@ -94,10 +90,8 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator } from 'frappe-ui'
+import { useDeliverable, useTasks } from '@/data/resources'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
@@ -112,7 +106,7 @@ const MEMBER_ACTIONS = {
 
 export default {
   name: 'MemberDeliverableView',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, FileUpload, CommentSection },
   data() {
     return { deliverable: null, tasks: [], loading: true, updating: false, updateError: '' }
   },
@@ -132,25 +126,24 @@ export default {
       this.loading = true
       try {
         const [d, t] = await Promise.all([
-          call('project_management.api.client.get_deliverable', { name: this.deliverableId }),
-          call('project_management.api.client.get_tasks', { deliverable: this.deliverableId }),
+          useDeliverable(this.deliverableId).fetch(),
+          useTasks({ deliverable: this.deliverableId }).fetch(),
         ])
-        this.deliverable = d.message; this.tasks = t.message || []
+        this.deliverable = d; this.tasks = t || []
       } catch {} finally { this.loading = false }
     },
     async performAction(action) {
       this.updating = true; this.updateError = ''
       try {
-        await call('project_management.api.client.update_deliverable_status', {
-          name: this.deliverableId, action,
+        await frappeRequest({
+          url: 'project_management.api.client.update_deliverable_status',
+          method: 'POST',
+          params: { name: this.deliverableId, action },
         })
         await this.loadAll()
       } catch (err) {
         this.updateError = err.message || 'Failed'
       } finally { this.updating = false }
-    },
-    actionClasses(action) {
-      return 'bg-blue-600 text-white hover:bg-blue-700'
     },
   },
 }

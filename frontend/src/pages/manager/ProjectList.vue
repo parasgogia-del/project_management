@@ -5,40 +5,27 @@
         <h1 class="text-xl font-bold text-gray-900">Projects</h1>
         <p class="text-sm text-gray-500 mt-0.5">Manage all your projects</p>
       </div>
-      <router-link
-        to="/project/new"
-        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        <feather-icon name="plus" class="w-4 h-4" />
+      <Button route="/project/new" appearance="primary" icon-left="plus">
         New Project
-      </router-link>
+      </Button>
     </div>
 
-    <!-- Filters -->
     <div class="flex items-center gap-3">
-      <div class="relative">
-        <feather-icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search projects..."
-          class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 bg-white w-64"
-        />
-      </div>
-      <select
+      <Input
+        v-model="searchQuery"
+        icon-left="search"
+        placeholder="Search projects..."
+        class="w-64"
+      />
+      <Input
+        type="select"
         v-model="statusFilter"
-        class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
-      >
-        <option value="">All Status</option>
-        <option value="Planning">Planning</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Completed">Completed</option>
-        <option value="On Hold">On Hold</option>
-        <option value="Cancelled">Cancelled</option>
-      </select>
+        :options="projectStatusOptions"
+        class="w-48"
+      />
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <div v-else-if="filteredProjects.length === 0" class="bg-white rounded-xl border border-gray-200">
       <EmptyState
@@ -46,13 +33,9 @@
         title="No projects found"
         description="Create your first project to get started"
       >
-        <router-link
-          to="/project/new"
-          class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <feather-icon name="plus" class="w-4 h-4" />
+        <Button route="/project/new" appearance="primary" icon-left="plus" class="mt-3">
           New Project
-        </router-link>
+        </Button>
       </EmptyState>
     </div>
 
@@ -68,7 +51,7 @@
             <h3 class="text-sm font-semibold text-gray-900 truncate">{{ project.project_name }}</h3>
             <p class="text-xs text-gray-500 mt-0.5">{{ project.client }}</p>
           </div>
-          <StatusBadge :status="project.status" />
+          <Badge :label="project.status" :color-map="statusColorMap" />
         </div>
 
         <p v-if="project.description" class="text-xs text-gray-400 line-clamp-2 mb-3">
@@ -93,22 +76,28 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { FeatherIcon, frappeRequest, Button, Input, Badge, LoadingIndicator } from 'frappe-ui'
+import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
 export default {
   name: 'ProjectList',
-  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, EmptyState },
+  components: { FeatherIcon, Button, Input, Badge, LoadingIndicator, ProgressBar, EmptyState },
   data() {
     return {
       projects: [],
       loading: true,
       searchQuery: '',
       statusFilter: '',
+      projectStatusOptions: [
+        { label: 'All Status', value: '' },
+        { label: 'Planning', value: 'Planning' },
+        { label: 'In Progress', value: 'In Progress' },
+        { label: 'Completed', value: 'Completed' },
+        { label: 'On Hold', value: 'On Hold' },
+        { label: 'Cancelled', value: 'Cancelled' },
+      ],
     }
   },
   computed: {
@@ -129,8 +118,8 @@ export default {
     async loadProjects() {
       this.loading = true
       try {
-        const result = await call('project_management.api.client.get_projects')
-        this.projects = result.message || []
+        const result = await frappeRequest({ url: 'project_management.api.client.get_projects', method: 'POST' })
+        this.projects = result || []
       } catch {
         this.projects = []
       } finally {

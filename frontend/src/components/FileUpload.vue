@@ -47,8 +47,7 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
+import { FeatherIcon, frappeRequest } from 'frappe-ui'
 
 export default {
   name: 'FileUpload',
@@ -84,8 +83,8 @@ export default {
           this.files = []
           return
         }
-        const result = await call(url, params)
-        this.files = result.message || []
+        const result = await frappeRequest({ url, method: 'POST', params })
+        this.files = result || []
       } catch {
         this.files = []
       }
@@ -142,7 +141,7 @@ export default {
         } else {
           return
         }
-        await call(url, { file_name: fileName })
+        await frappeRequest({ url, method: 'POST', params: { file_name: fileName } })
         this.$emit('deleted')
         await this.loadFiles()
       } catch (err) {

@@ -1,18 +1,16 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ deliverable?.title || 'Loading...' }}</h1>
-          <StatusBadge v-if="deliverable" :status="deliverable.status" />
+          <Badge v-if="deliverable" :label="deliverable.status" :color-map="statusColorMap" />
         </div>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="deliverable">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -53,7 +51,7 @@
                 class="flex items-center justify-between py-2"
               >
                 <p class="text-sm text-gray-800 truncate">{{ t.title }}</p>
-                <StatusBadge :status="t.status" />
+                <Badge :label="t.status" :color-map="statusColorMap" />
               </div>
             </div>
           </div>
@@ -69,26 +67,34 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Review Actions</h2>
             <div v-if="!selectedAction" class="space-y-2">
-              <button
+              <Button
                 v-for="action in availableActions"
                 :key="action"
                 @click="selectedAction = action"
                 :disabled="updating"
-                class="w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors"
-                :class="action === 'Approve' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'"
-              >
-                {{ action }}
-              </button>
+                :appearance="action === 'Approve' ? 'success' : 'warning'"
+                class="w-full"
+              >{{ action }}</Button>
               <p v-if="!availableActions.length" class="text-xs text-gray-400 text-center">No actions available</p>
             </div>
             <div v-else class="space-y-3">
               <p class="text-sm font-medium text-gray-700">{{ selectedAction === 'Approve' ? 'Approve this deliverable?' : 'Request changes — describe what needs to change:' }}</p>
-              <textarea v-model="feedbackText" rows="3" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none resize-none" :placeholder="selectedAction === 'Approve' ? 'Optional approval comment...' : 'Describe the changes needed...'" />
+              <Input
+                v-model="feedbackText"
+                type="textarea"
+                :rows="3"
+                :placeholder="selectedAction === 'Approve' ? 'Optional approval comment...' : 'Describe the changes needed...'"
+              />
               <div class="flex gap-2">
-                <button @click="performAction(selectedAction)" :disabled="updating || (selectedAction === 'Request Changes' && !feedbackText.trim())" class="flex-1 px-3 py-2 text-xs font-medium text-white rounded-lg" :class="selectedAction === 'Approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'">
-                  {{ updating ? 'Submitting...' : 'Submit' }}
-                </button>
-                <button @click="cancelReview" :disabled="updating" class="px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+                <Button
+                  :appearance="selectedAction === 'Approve' ? 'success' : 'warning'"
+                  :disabled="selectedAction === 'Request Changes' && !feedbackText.trim()"
+                  :loading="updating"
+                  :loading-text="updating ? 'Submitting...' : null"
+                  @click="performAction(selectedAction)"
+                  class="flex-1"
+                >Submit</Button>
+                <Button appearance="secondary" :disabled="updating" @click="cancelReview">Cancel</Button>
               </div>
               <p v-if="updateError" class="text-xs text-red-500">{{ updateError }}</p>
             </div>
@@ -109,10 +115,9 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator, Input } from 'frappe-ui'
+import { useDeliverable, useTasks } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
@@ -127,7 +132,7 @@ const ACTIONS = {
 
 export default {
   name: 'ClientDeliverableView',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, Input, FileUpload, CommentSection },
   data() {
     return {
       deliverable: null, tasks: [], loading: true, updating: false, updateError: '',
@@ -147,23 +152,31 @@ export default {
       this.loading = true
       try {
         const [d, t] = await Promise.all([
-          call('project_management.api.client.get_deliverable', { name: this.deliverableId }),
-          call('project_management.api.client.get_tasks', { deliverable: this.deliverableId }),
+          useDeliverable(this.deliverableId).fetch(),
+          useTasks({ deliverable: this.deliverableId }).fetch(),
         ])
-        this.deliverable = d.message
-        this.tasks = t.message || []
+        this.deliverable = d
+        this.tasks = t || []
       } catch {} finally { this.loading = false }
     },
     async performAction(action) {
       this.updating = true; this.updateError = ''
       try {
         if (this.feedbackText.trim()) {
-          await call('project_management.api.client.add_comment', {
-            reference_doctype: 'Deliverable', reference_name: this.deliverableId,
-            content: `**${action}:** ${this.feedbackText.trim()}`,
+          await frappeRequest({
+            url: 'project_management.api.client.add_comment',
+            method: 'POST',
+            params: {
+              reference_doctype: 'Deliverable', reference_name: this.deliverableId,
+              content: `**${action}:** ${this.feedbackText.trim()}`,
+            },
           })
         }
-        await call('project_management.api.client.update_deliverable_status', { name: this.deliverableId, action })
+        await frappeRequest({
+          url: 'project_management.api.client.update_deliverable_status',
+          method: 'POST',
+          params: { name: this.deliverableId, action },
+        })
         this.selectedAction = null; this.feedbackText = ''
         await this.loadAll()
       } catch (err) { this.updateError = err.message || 'Failed' } finally { this.updating = false }

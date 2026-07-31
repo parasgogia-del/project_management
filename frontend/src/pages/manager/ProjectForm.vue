@@ -1,9 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ isEdit ? 'Edit Project' : 'Create Project' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ isEdit ? 'Update project details' : 'Set up a new project' }}</p>
@@ -12,95 +10,59 @@
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="space-y-5">
-        <!-- Project Name -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
-          <input
-            v-model="form.project_name"
-            type="text"
-            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-            placeholder="Enter project name"
+        <Input
+          v-model="form.project_name"
+          label="Project Name *"
+          placeholder="Enter project name"
+        />
+
+        <div class="grid grid-cols-2 gap-4">
+          <Input
+            v-model="form.client"
+            label="Client *"
+            placeholder="Client name"
+          />
+          <Input
+            v-model="form.project_manager"
+            label="Project Manager"
+            placeholder="Manager email"
           />
         </div>
 
-        <!-- Client & Manager row -->
+        <Input
+          type="select"
+          v-model="form.status"
+          label="Status"
+          :options="projectStatusOptions"
+        />
+
         <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Client *</label>
-            <input
-              v-model="form.client"
-              type="text"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-              placeholder="Client name"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Project Manager</label>
-            <input
-              v-model="form.project_manager"
-              type="text"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-              placeholder="Manager email"
-            />
-          </div>
-        </div>
-
-        <!-- Status -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select
-            v-model="form.status"
-            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
-          >
-            <option value="Planning">Planning</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="On Hold">On Hold</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
-
-        <!-- Dates row -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              v-model="form.start_date"
-              type="date"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              v-model="form.end_date"
-              type="date"
-              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-            />
-          </div>
-        </div>
-
-        <!-- Description -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            v-model="form.description"
-            rows="3"
-            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none"
-            placeholder="Project description..."
+          <Input
+            type="date"
+            v-model="form.start_date"
+            label="Start Date"
+          />
+          <Input
+            type="date"
+            v-model="form.end_date"
+            label="End Date"
           />
         </div>
+
+        <Input
+          type="textarea"
+          v-model="form.description"
+          label="Description"
+          :rows="3"
+          placeholder="Project description..."
+        />
       </div>
     </div>
 
-    <!-- Members section -->
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold text-gray-800">Project Members</h2>
-        <button
-          @click="addMember"
-          class="text-xs font-medium text-blue-600 hover:text-blue-700"
-        >+ Add Member</button>
+        <Button appearance="minimal" icon-left="plus" @click="addMember">Add Member</Button>
       </div>
       <div v-if="form.project_members.length === 0" class="text-xs text-gray-400 text-center py-4">
         No members added
@@ -111,45 +73,32 @@
           :key="idx"
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
-          <input
+          <Input
             v-model="member.user"
-            type="text"
             placeholder="User email"
-            class="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
+            class="flex-1"
           />
-          <select
+          <Input
+            type="select"
             v-model="member.project_role"
-            class="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
-          >
-            <option value="Project Manager">Project Manager</option>
-            <option value="Developer">Developer</option>
-            <option value="Designer">Designer</option>
-            <option value="QA">QA</option>
-            <option value="Business Analyst">Business Analyst</option>
-            <option value="UI/UX Designer">UI/UX Designer</option>
-            <option value="Client Reviewer">Client Reviewer</option>
-          </select>
-          <label class="flex items-center gap-1 text-xs text-gray-500">
-            <input type="checkbox" v-model="member.is_active" class="rounded" /> Active
-          </label>
-          <button
-            @click="removeMember(idx)"
-            class="p-1 text-gray-400 hover:text-red-500 rounded"
-          >
-            <feather-icon name="x" class="w-4 h-4" />
-          </button>
+            :options="memberRoleOptions"
+            class="w-44 shrink-0"
+          />
+          <Input
+            type="checkbox"
+            v-model="member.is_active"
+            label="Active"
+            class="shrink-0"
+          />
+          <Button appearance="minimal" icon="x" @click="removeMember(idx)" class="shrink-0" />
         </div>
       </div>
     </div>
 
-    <!-- Vendors section -->
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold text-gray-800">Vendors</h2>
-        <button
-          @click="addVendor"
-          class="text-xs font-medium text-blue-600 hover:text-blue-700"
-        >+ Add Vendor</button>
+        <Button appearance="minimal" icon-left="plus" @click="addVendor">Add Vendor</Button>
       </div>
       <div v-if="form.vendors.length === 0" class="text-xs text-gray-400 text-center py-4">
         No vendors added
@@ -160,45 +109,31 @@
           :key="idx"
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
-          <input
+          <Input
             v-model="vendor.vendor"
-            type="text"
             placeholder="Vendor name"
-            class="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
+            class="flex-1"
           />
-          <select
+          <Input
+            type="select"
             v-model="vendor.status"
-            class="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
-          >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Suspended">Suspended</option>
-          </select>
-          <button
-            @click="removeVendor(idx)"
-            class="p-1 text-gray-400 hover:text-red-500 rounded"
-          >
-            <feather-icon name="x" class="w-4 h-4" />
-          </button>
+            :options="vendorStatusOptions"
+            class="w-36 shrink-0"
+          />
+          <Button appearance="minimal" icon="x" @click="removeVendor(idx)" class="shrink-0" />
         </div>
       </div>
     </div>
 
-    <!-- Actions -->
     <div class="flex items-center justify-end gap-3">
-      <button
-        @click="$router.back()"
-        class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-      >
-        Cancel
-      </button>
-      <button
+      <Button appearance="secondary" @click="$router.back()">Cancel</Button>
+      <Button
+        appearance="primary"
+        :disabled="!form.project_name || !form.client"
+        :loading="saving"
+        :loading-text="saving ? 'Saving...' : null"
         @click="saveProject"
-        :disabled="saving || !form.project_name || !form.client"
-        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-      >
-        {{ saving ? 'Saving...' : (isEdit ? 'Update Project' : 'Create Project') }}
-      </button>
+      >{{ isEdit ? 'Update Project' : 'Create Project' }}</Button>
     </div>
 
     <p v-if="error" class="text-xs text-red-500 text-center">{{ error }}</p>
@@ -206,17 +141,20 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
+import { frappeRequest, Button, Input } from 'frappe-ui'
+import { useProject } from '@/data/resources'
 
 export default {
   name: 'ProjectForm',
-  components: { FeatherIcon },
+  components: { Button, Input },
   data() {
     return {
       isEdit: false,
       saving: false,
       error: '',
+      projectStatusOptions: ['Planning', 'In Progress', 'Completed', 'On Hold', 'Cancelled'],
+      memberRoleOptions: ['Project Manager', 'Developer', 'Designer', 'QA', 'Business Analyst', 'UI/UX Designer', 'Client Reviewer'],
+      vendorStatusOptions: ['Active', 'Inactive', 'Suspended'],
       form: {
         project_name: '',
         client: '',
@@ -239,8 +177,7 @@ export default {
   methods: {
     async loadProject(name) {
       try {
-        const result = await call('project_management.api.client.get_project', { name })
-        const project = result.message
+        const project = await useProject(name).fetch()
         if (project) {
           this.form = {
             project_name: project.project_name,
@@ -308,13 +245,16 @@ export default {
 
       try {
         if (this.isEdit) {
-          await call('project_management.api.client.update_project', {
-            name: this.$route.params.id,
-            data: this.form,
+          await frappeRequest({
+            url: 'project_management.api.client.update_project',
+            method: 'POST',
+            params: { name: this.$route.params.id, data: this.form },
           })
         } else {
-          await call('project_management.api.client.create_project', {
-            data: this.form,
+          await frappeRequest({
+            url: 'project_management.api.client.create_project',
+            method: 'POST',
+            params: { data: this.form },
           })
         }
         this.$router.push('/projects')

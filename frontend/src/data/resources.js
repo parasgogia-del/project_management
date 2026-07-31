@@ -1,15 +1,4 @@
-import { createResource, createListResource } from 'frappe-ui'
-
-// Projects
-export const projectsResource = createListResource({
-  doctype: 'Project Info',
-  fields: ['name', 'project_name', 'status', 'progress', 'client', 'project_manager', 'start_date', 'end_date', 'description'],
-  auto: false,
-})
-
-export function fetchProjects() {
-  return projectsResource.reload()
-}
+import { createResource } from 'frappe-ui'
 
 // Project detail
 export function useProject(name) {

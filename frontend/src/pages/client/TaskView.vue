@@ -1,24 +1,22 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ task?.title || 'Loading...' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ task?.project }}</p>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="4" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="task">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center gap-3 mb-4">
-              <StatusBadge :status="task.status" />
-              <StatusBadge :status="task.priority" />
+              <Badge :label="task.status" :color-map="statusColorMap" />
+              <Badge :label="task.priority" :color-map="statusColorMap" />
             </div>
             <p class="text-sm text-gray-600">{{ task.description || 'No description' }}</p>
             <div class="grid grid-cols-3 gap-4 mt-4 text-sm">
@@ -54,15 +52,14 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { FeatherIcon, Button, Badge, LoadingIndicator } from 'frappe-ui'
+import { useTask } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import CommentSection from '@/components/CommentSection.vue'
 
 export default {
   name: 'ClientTaskView',
-  components: { FeatherIcon, StatusBadge, SkeletonLoader, CommentSection },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, CommentSection },
   data() {
     return { task: null, loading: true }
   },
@@ -74,8 +71,7 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const res = await call('project_management.api.client.get_task', { name: this.taskId })
-        this.task = res.message
+        this.task = await useTask(this.taskId).fetch()
       } catch {} finally { this.loading = false }
     },
   },

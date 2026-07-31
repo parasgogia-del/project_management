@@ -1,49 +1,23 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <button @click="$router.back()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-        <feather-icon name="arrow-left" class="w-5 h-5" />
-      </button>
+      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ project?.project_name || 'Loading...' }}</h1>
-          <StatusBadge v-if="project" :status="project.status" />
+          <Badge v-if="project" :label="project.status" :color-map="statusColorMap" />
         </div>
         <p v-if="project?.client" class="text-sm text-gray-500 mt-0.5">Client: {{ project.client }}</p>
       </div>
       <div class="flex gap-2">
-        <router-link
-          v-if="project"
-          :to="`/project/${projectId}/gantt`"
-          class="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Gantt Chart
-        </router-link>
-        <router-link
-          v-if="project"
-          :to="`/project/${projectId}/reports`"
-          class="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Reports
-        </router-link>
-        <router-link
-          v-if="project"
-          :to="`/project/${projectId}/edit`"
-          class="px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-        >
-          Edit
-        </router-link>
-        <button
-          v-if="project"
-          @click="showDeleteConfirm = true"
-          class="px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-        >
-          Delete
-        </button>
+        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/gantt`">Gantt Chart</Button>
+        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/reports`">Reports</Button>
+        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/edit`">Edit</Button>
+        <Button v-if="project" appearance="danger" @click="showDeleteConfirm = true">Delete</Button>
       </div>
     </div>
 
-    <SkeletonLoader v-if="loading" :lines="5" />
+    <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
 
     <template v-else-if="project">
       <!-- Progress + description -->
@@ -96,7 +70,7 @@
                   <p class="text-sm font-medium text-gray-800 truncate">{{ d.title }}</p>
                   <p class="text-xs text-gray-400">Due: {{ d.due_date || 'Not set' }}</p>
                 </div>
-                <StatusBadge :status="d.status" />
+                <Badge :label="d.status" :color-map="statusColorMap" />
               </div>
             </div>
           </div>
@@ -124,8 +98,8 @@
                   <p class="text-sm text-gray-800 truncate">{{ task.title }}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <StatusBadge :status="task.priority" />
-                  <StatusBadge :status="task.status" />
+                  <Badge :label="task.priority" :color-map="statusColorMap" />
+                  <Badge :label="task.status" :color-map="statusColorMap" />
                 </div>
               </div>
             </div>
@@ -166,9 +140,7 @@
                 :key="m.name"
                 class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50"
               >
-                <div class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <span class="text-[10px] font-medium text-blue-700">{{ getInitials(m.user) }}</span>
-                </div>
+                <Avatar :label="m.user" size="sm" />
                 <div class="min-w-0">
                   <p class="text-xs font-medium text-gray-800 truncate">{{ m.user }}</p>
                   <p class="text-[10px] text-gray-400">{{ m.project_role }}</p>
@@ -193,7 +165,7 @@
                   <p class="text-xs font-medium text-gray-800">{{ v.vendor }}</p>
                   <p class="text-[10px] text-gray-400">{{ v.company }}</p>
                 </div>
-                <StatusBadge :status="v.status" />
+                <Badge :label="v.status" :color-map="statusColorMap" />
               </div>
             </div>
           </div>
@@ -211,52 +183,36 @@
       </div>
     </template>
 
-    <!-- Delete Confirmation Modal -->
-    <div
-      v-if="showDeleteConfirm"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      @click.self="showDeleteConfirm = false"
-    >
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">Delete Project</h2>
-        <p class="text-sm text-gray-500 mb-6">
+    <Dialog v-model="showDeleteConfirm" :options="{ title: 'Delete Project', size: 'sm' }">
+      <template #body-content>
+        <p class="text-sm text-gray-500">
           Are you sure you want to delete <strong>{{ project?.project_name }}</strong>? This action cannot be undone. All tasks, deliverables, and files associated with this project will also be removed.
         </p>
-        <div class="flex justify-end gap-3">
-          <button
-            @click="showDeleteConfirm = false"
-            class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-          >
-            Cancel
-          </button>
-          <button
-            @click="deleteProject"
-            :disabled="deleting"
-            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
-            {{ deleting ? 'Deleting...' : 'Delete Project' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <Toast ref="toast" />
+      </template>
+      <template #actions="{ close }">
+        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button
+          appearance="danger"
+          :loading="deleting"
+          :loading-text="deleting ? 'Deleting...' : null"
+          @click="deleteProject"
+        >Delete Project</Button>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui'
-import { call } from '@/utils/api.js'
-import StatusBadge from '@/components/StatusBadge.vue'
+import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator, Dialog, toast } from 'frappe-ui'
+import { useProject, useTasks, useDeliverablesWithDetails } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
-import Toast from '@/components/Toast.vue'
 
 export default {
   name: 'ProjectDetail',
-  components: { FeatherIcon, StatusBadge, ProgressBar, SkeletonLoader, FileUpload, CommentSection, Toast },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, ProgressBar, FileUpload, CommentSection },
   data() {
     return {
       project: null,
@@ -289,31 +245,27 @@ export default {
       this.loading = true
       try {
         const [projectRes, tasksRes, deliverablesRes] = await Promise.all([
-          call('project_management.api.client.get_project', { name: this.projectId }),
-          call('project_management.api.client.get_tasks', { project: this.projectId }),
-          call('project_management.api.client.get_deliverables_with_details', { project: this.projectId }),
+          useProject(this.projectId).fetch(),
+          useTasks({ project: this.projectId }).fetch(),
+          useDeliverablesWithDetails(this.projectId).fetch(),
         ])
-        this.project = projectRes.message
-        this.tasks = tasksRes.message || []
-        this.deliverables = deliverablesRes.message || []
+        this.project = projectRes
+        this.tasks = tasksRes || []
+        this.deliverables = deliverablesRes || []
       } catch (err) {
         console.error('Failed to load project', err)
       } finally {
         this.loading = false
       }
     },
-    getInitials(user) {
-      if (!user) return '?'
-      return user.split('@')[0].slice(0, 2).toUpperCase()
-    },
     async deleteProject() {
       this.deleting = true
       try {
-        await call('project_management.api.client.delete_project', { name: this.projectId })
-        this.$refs.toast.show('Project deleted successfully', 'success')
+        await frappeRequest({ url: 'project_management.api.client.delete_project', method: 'POST', params: { name: this.projectId } })
+        toast({ title: 'Success', text: 'Project deleted successfully', icon: 'check-circle', iconClasses: 'text-green-600' })
         this.$router.push('/projects')
       } catch (err) {
-        this.$refs.toast.show(err.message || 'Failed to delete project', 'error')
+        toast({ title: 'Error', text: err.message || 'Failed to delete project', icon: 'alert-circle', iconClasses: 'text-red-600' })
       } finally {
         this.deleting = false
         this.showDeleteConfirm = false
