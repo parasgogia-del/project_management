@@ -18,7 +18,7 @@
     <!-- Navigation -->
     <nav class="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
       <router-link
-        v-for="item in managerNav"
+        v-for="item in navItems.primary"
         :key="item.route"
         :to="item.route"
         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
@@ -28,20 +28,22 @@
         <span v-if="!collapsed">{{ item.label }}</span>
       </router-link>
 
-      <div v-if="!collapsed" class="pt-4 pb-2 px-3">
-        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Portals</p>
-      </div>
+      <template v-if="navItems.portals.length">
+        <div v-if="!collapsed" class="pt-4 pb-2 px-3">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Portals</p>
+        </div>
 
-      <router-link
-        v-for="item in portalNav"
-        :key="item.route"
-        :to="item.route"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
-        :class="isActive(item.route) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'"
-      >
-        <feather-icon :name="item.icon" class="w-4 h-4 flex-shrink-0" />
-        <span v-if="!collapsed">{{ item.label }}</span>
-      </router-link>
+        <router-link
+          v-for="item in navItems.portals"
+          :key="item.route"
+          :to="item.route"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+          :class="isActive(item.route) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'"
+        >
+          <feather-icon :name="item.icon" class="w-4 h-4 flex-shrink-0" />
+          <span v-if="!collapsed">{{ item.label }}</span>
+        </router-link>
+      </template>
     </nav>
 
     <!-- Collapse toggle -->
@@ -59,6 +61,7 @@
 
 <script>
 import { FeatherIcon } from 'frappe-ui'
+import { session } from '@/data/session'
 
 export default {
   name: 'Sidebar',
@@ -78,7 +81,34 @@ export default {
         { label: 'Client Portal', icon: 'user', route: '/client/dashboard' },
         { label: 'Vendor Portal', icon: 'truck', route: '/vendor/dashboard' },
       ],
+      memberNav: [
+        { label: 'Dashboard', icon: 'home', route: '/member/dashboard' },
+      ],
+      clientNav: [
+        { label: 'Dashboard', icon: 'home', route: '/client/dashboard' },
+      ],
+      vendorNav: [
+        { label: 'Dashboard', icon: 'home', route: '/vendor/dashboard' },
+      ],
     }
+  },
+  computed: {
+    navItems() {
+      const roles = session.roles
+      if (roles.includes('Project Manager')) {
+        return { primary: this.managerNav, portals: this.portalNav }
+      }
+      if (roles.includes('Project Member')) {
+        return { primary: this.memberNav, portals: [] }
+      }
+      if (roles.includes('Client')) {
+        return { primary: this.clientNav, portals: [] }
+      }
+      if (roles.includes('Vendor')) {
+        return { primary: this.vendorNav, portals: [] }
+      }
+      return { primary: [], portals: [] }
+    },
   },
   methods: {
     isActive(route) {

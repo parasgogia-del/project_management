@@ -2,7 +2,7 @@ import frappe
 from frappe.utils.file_manager import save_file
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def upload_project_file(project):
     if "file" not in frappe.request.files:
         frappe.throw("No file uploaded")
@@ -22,7 +22,7 @@ def upload_project_file(project):
     return result
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_project_files(project):
     files = frappe.get_all(
         "File",
@@ -46,7 +46,7 @@ def get_project_files(project):
     return files
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_project_file(file_name):
     if not frappe.db.exists("File", file_name):
         frappe.throw("File not found")
@@ -57,7 +57,7 @@ def delete_project_file(file_name):
     return {"message": "Deleted"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def upload_deliverable_file(deliverable):
     if "file" not in frappe.request.files:
         frappe.throw("No file uploaded")
@@ -77,7 +77,7 @@ def upload_deliverable_file(deliverable):
     return result
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_deliverable_files(deliverable):
     files = frappe.get_all(
         "File",
@@ -101,7 +101,7 @@ def get_deliverable_files(deliverable):
     return files
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_deliverable_file(file_name):
     if not frappe.db.exists("File", file_name):
         frappe.throw("File not found")
@@ -112,7 +112,7 @@ def delete_deliverable_file(file_name):
     return {"message": "Deleted"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def upload_task_file(task):
     if "file" not in frappe.request.files:
         frappe.throw("No file uploaded")
@@ -132,7 +132,7 @@ def upload_task_file(task):
     return result
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_task_files(task):
     files = frappe.get_all(
         "File",
@@ -156,7 +156,7 @@ def get_task_files(task):
     return files
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_task_file(file_name):
     if not frappe.db.exists("File", file_name):
         frappe.throw("File not found")

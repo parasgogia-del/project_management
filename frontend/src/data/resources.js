@@ -112,6 +112,14 @@ export function useNotifications() {
   })
 }
 
+// Profile
+export function useProfile() {
+  return createResource({
+    url: 'project_management.api.client.get_profile',
+    auto: false,
+  })
+}
+
 // Vendor APIs
 export function useVendorProjects(vendor_name) {
   return createResource({

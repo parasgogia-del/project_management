@@ -1,7 +1,26 @@
+import functools
+
 import frappe
 
 
-@frappe.whitelist(allow_guest=True)
+def require_roles(*roles):
+    """Decorator to restrict a whitelisted method to the given roles."""
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            user_roles = set(frappe.get_roles())
+            if not any(r in user_roles for r in roles):
+                frappe.throw(
+                    "You do not have permission to perform this action",
+                    frappe.PermissionError,
+                )
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@frappe.whitelist()
+@require_roles("Project Manager")
 def create_project(data=None):
     if not data:
         frappe.throw("Data is required")
@@ -26,7 +45,8 @@ def create_project(data=None):
     return doc.as_dict()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def create_task(data=None):
     if not data:
         frappe.throw("Data is required")
@@ -54,7 +74,7 @@ def create_task(data=None):
     return doc.as_dict()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_projects():
     projects = frappe.get_all(
         "Project Info",
@@ -73,7 +93,7 @@ def get_projects():
     return projects
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_project(name=None):
     if not name:
         return None
@@ -95,7 +115,7 @@ def get_project(name=None):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_deliverables(project=None):
     filters = {}
     if project:
@@ -118,7 +138,8 @@ def get_deliverables(project=None):
     return deliverables
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def update_project(name=None, data=None):
     if not name:
         frappe.throw("Project name is required")
@@ -144,7 +165,8 @@ def update_project(name=None, data=None):
     frappe.db.commit()
     return frappe.get_doc("Project Info", name).as_dict()
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager", "Client")
 def invite_project_member(project=None, email=None, role="Client Reviewer", notes=""):
     if not project or not email:
         frappe.throw("Project and email are required")
@@ -173,7 +195,8 @@ def invite_project_member(project=None, email=None, role="Client Reviewer", note
     return frappe.get_doc("Project Info", project).as_dict()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def delete_project(name=None):
     if not name:
         frappe.throw("Project name is required")
@@ -184,7 +207,8 @@ def delete_project(name=None):
     return {"status": "ok"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def update_task(name=None, data=None):
     if not name:
         frappe.throw("Task name is required")
@@ -228,7 +252,7 @@ def _update_child_table(parent_doctype, parent_name, fieldname, child_doctype, r
             frappe.get_doc({"doctype": child_doctype, **row_data}).insert(ignore_permissions=True)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_deliverables_with_details(project=None):
     filters = {}
     if project:
@@ -277,7 +301,7 @@ def get_deliverables_with_details(project=None):
     return deliverables
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_deliverable(name=None):
     if not name:
         return None
@@ -288,7 +312,7 @@ def get_deliverable(name=None):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_tasks(project=None, deliverable=None, assigned_to=None):
     filters = {}
     if project:
@@ -322,7 +346,7 @@ def get_tasks(project=None, deliverable=None, assigned_to=None):
     return tasks
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_task(name=None):
     if not name:
         return None
@@ -333,7 +357,7 @@ def get_task(name=None):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_time_logs(task=None):
     filters = {}
     if task:
@@ -356,7 +380,7 @@ def get_time_logs(task=None):
     return logs
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_time_log(task=None, project=None, date=None, hours=None, description="", project_member=None):
     if not task or not hours:
         frappe.throw("Task and hours are required")
@@ -377,7 +401,7 @@ def create_time_log(task=None, project=None, date=None, hours=None, description=
     frappe.db.commit()
     return doc.as_dict()
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def toggle_today_focus(name=None):
     if not name:
         frappe.throw("Task name is required")
@@ -388,7 +412,7 @@ def toggle_today_focus(name=None):
     frappe.db.commit()
     return {"is_today_focus": doc.is_today_focus}
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_today_hours(user=None):
     if not user:
         user = frappe.session.user
@@ -401,7 +425,7 @@ def get_today_hours(user=None):
     )
     return sum(l.hours or 0 for l in logs)
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_task_status(name=None, status=None):
     if not name or not status:
         frappe.throw("Name and status are required")
@@ -415,7 +439,7 @@ def update_task_status(name=None, status=None):
     return {"status": "ok"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_deliverable_status(name=None, action=None):
     if not name or not action:
         frappe.throw("Name and action are required")
@@ -438,7 +462,8 @@ def update_deliverable_status(name=None, action=None):
     return {"status": "ok", "workflow_state": next_state}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def get_gantt_tasks(project=None):
     filters = {}
     if project:
@@ -478,7 +503,7 @@ def get_gantt_tasks(project=None):
     return tasks
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_comments(reference_doctype=None, reference_name=None):
     if not reference_doctype or not reference_name:
         frappe.throw("reference_doctype and reference_name are required")
@@ -495,7 +520,7 @@ def get_comments(reference_doctype=None, reference_name=None):
     return comments
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def add_comment(reference_doctype=None, reference_name=None, content=None):
     if not reference_doctype or not reference_name or not content:
         frappe.throw("reference_doctype, reference_name, and content are required")
@@ -513,19 +538,37 @@ def add_comment(reference_doctype=None, reference_name=None, content=None):
 
 @frappe.whitelist(allow_guest=True)
 def get_session_user():
-    print("Session user:", frappe.session.user)
     return {
         "user": frappe.session.user,
         "roles": frappe.get_roles(),
     }
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist()
+def get_profile():
+    user = frappe.session.user
+    if user in ("Guest", "Administrator"):
+        return {"user": user, "roles": frappe.get_roles()}
+    doc = frappe.get_doc("User", user)
+    return {
+        "user": doc.name,
+        "full_name": doc.full_name,
+        "email": doc.email,
+        "mobile_no": doc.get("mobile_no"),
+        "location": doc.get("location"),
+        "bio": doc.get("bio"),
+        "user_image": doc.user_image,
+        "last_login": doc.get("last_login"),
+        "roles": frappe.get_roles(),
+    }
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_csrf_token():
     return frappe.sessions.get_csrf_token()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def edit_comment(name=None, content=None):
     if not name or not content:
         frappe.throw("name and content are required")
@@ -540,7 +583,7 @@ def edit_comment(name=None, content=None):
     return comment
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_comment(name=None):
     if not name:
         frappe.throw("name is required")
@@ -554,7 +597,7 @@ def delete_comment(name=None):
     return {"status": "ok"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_notifications():
     try:
         from frappe.core.doctype.notification_log.notification_log import get_notifications
@@ -563,7 +606,8 @@ def get_notifications():
         return []
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager")
 def get_progress_report(project=None, period="daily"):
     today = frappe.utils.today()
     if period == "weekly":
@@ -655,7 +699,7 @@ def get_progress_report(project=None, period="daily"):
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_deliverable_for_task(task=None):
     if not task:
         return {"found": False}

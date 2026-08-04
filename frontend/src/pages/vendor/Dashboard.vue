@@ -125,6 +125,7 @@ export default {
       try {
         const userRes = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
         this.vendorName = userRes
+        console.log('Dashboard User:', userRes.user, '| Roles:', userRes.roles)
         const [t, d, p] = await Promise.all([
           useVendorTasks(this.vendorName).fetch(),
           useVendorDeliverables(this.vendorName).fetch(),

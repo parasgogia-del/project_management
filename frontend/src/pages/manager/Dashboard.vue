@@ -231,8 +231,15 @@ export default {
   },
   mounted() {
     this.loadAll()
+    this.logSession()
   },
   methods: {
+    async logSession() {
+      try {
+        const res = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
+        console.log('Dashboard User:', res.user, '| Roles:', res.roles)
+      } catch {}
+    },
     async loadAll() {
       await Promise.all([
         this.loadProjects(),

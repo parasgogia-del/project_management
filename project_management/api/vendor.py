@@ -1,7 +1,9 @@
 import frappe
+from project_management.project_management.api.client import require_roles
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager", "Vendor")
 def get_vendor_projects(vendor_name=None):
     if not vendor_name:
         return []
@@ -34,7 +36,8 @@ def get_vendor_projects(vendor_name=None):
     return projects
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager", "Vendor")
 def get_vendor_deliverables(vendor_name=None):
     if not vendor_name:
         return []
@@ -58,7 +61,8 @@ def get_vendor_deliverables(vendor_name=None):
     return deliverables
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+@require_roles("Project Manager", "Vendor")
 def get_vendor_tasks(vendor_name=None):
     if not vendor_name:
         return []
