@@ -1,19 +1,19 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ project?.project_name || 'Loading...' }}</h1>
-          <Badge v-if="project" :label="project.status" :color-map="statusColorMap" />
+          <Badge v-if="project" :label="project.status" :theme="statusColorMap[project.status] || 'gray'" />
         </div>
         <p v-if="project?.client" class="text-sm text-gray-500 mt-0.5">Client: {{ project.client }}</p>
       </div>
       <div class="flex gap-2">
-        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/gantt`">Gantt Chart</Button>
-        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/reports`">Reports</Button>
-        <Button v-if="project" appearance="secondary" :route="`/project/${projectId}/edit`">Edit</Button>
-        <Button v-if="project" appearance="danger" @click="showDeleteConfirm = true">Delete</Button>
+        <Button v-if="project" variant="outline" :route="`/project/${projectId}/gantt`">Gantt Chart</Button>
+        <Button v-if="project" variant="outline" :route="`/project/${projectId}/reports`">Reports</Button>
+        <Button v-if="project" variant="outline" :route="`/project/${projectId}/edit`">Edit</Button>
+        <Button v-if="project" theme="red" variant="solid" @click="showDeleteConfirm = true">Delete</Button>
       </div>
     </div>
 
@@ -70,7 +70,7 @@
                   <p class="text-sm font-medium text-gray-800 truncate">{{ d.title }}</p>
                   <p class="text-xs text-gray-400">Due: {{ d.due_date || 'Not set' }}</p>
                 </div>
-                <Badge :label="d.status" :color-map="statusColorMap" />
+                <Badge :label="d.status" :theme="statusColorMap[d.status] || 'gray'" />
               </div>
             </div>
           </div>
@@ -98,8 +98,8 @@
                   <p class="text-sm text-gray-800 truncate">{{ task.title }}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <Badge :label="task.priority" :color-map="statusColorMap" />
-                  <Badge :label="task.status" :color-map="statusColorMap" />
+                  <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
+                  <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
                 </div>
               </div>
             </div>
@@ -165,7 +165,7 @@
                   <p class="text-xs font-medium text-gray-800">{{ v.vendor }}</p>
                   <p class="text-[10px] text-gray-400">{{ v.company }}</p>
                 </div>
-                <Badge :label="v.status" :color-map="statusColorMap" />
+                <Badge :label="v.status" :theme="statusColorMap[v.status] || 'gray'" />
               </div>
             </div>
           </div>
@@ -186,13 +186,13 @@
     <Dialog v-model="showDeleteConfirm" :options="{ title: 'Delete Project', size: 'sm' }">
       <template #body-content>
         <p class="text-sm text-gray-500">
-          Are you sure you want to delete <strong>{{ project?.project_name }}</strong>? This action cannot be undone. All tasks, deliverables, and files associated with this project will also be removed.
+          This will permanently delete <strong>{{ project?.project_name }}</strong> and everything linked to it — tasks, deliverables, time logs, and the project's Raven discussion channels. This cannot be undone.
         </p>
       </template>
       <template #actions="{ close }">
-        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button variant="outline" @click="close">Cancel</Button>
         <Button
-          appearance="danger"
+          theme="red" variant="solid"
           :loading="deleting"
           :loading-text="deleting ? 'Deleting...' : null"
           @click="deleteProject"

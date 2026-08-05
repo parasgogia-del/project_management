@@ -74,10 +74,72 @@ def create_task(data=None):
     return doc.as_dict()
 
 
+def _get_vendor_for_user(user):
+    names = frappe.get_all("Vendor", filters={"user": user}, pluck="name")
+    return names[0] if names else None
+
+
+def _get_role_users(role):
+    """Users holding the given role, formatted as autocomplete options."""
+    users = frappe.get_all("Has Role", filters={"role": role}, pluck="parent")
+    options = []
+    for u in users:
+        full_name = frappe.db.get_value("User", u, "full_name") or ""
+        label = f"{full_name} ({u})" if full_name and full_name != u else u
+        options.append({"label": label, "value": u})
+    return sorted(options, key=lambda o: o["label"].lower())
+
+
+@frappe.whitelist()
+def get_form_options():
+    """Options for the project form: clients, managers, members, and vendors."""
+    vendors = frappe.get_all("Vendor", fields=["name", "vendor_name"], order_by="vendor_name asc")
+    return {
+        "clients": _get_role_users("Client"),
+        "project_managers": _get_role_users("Project Manager"),
+        "members": _get_role_users("Project Member"),
+        "vendors": [{"label": v.vendor_name or v.name, "value": v.name} for v in vendors],
+    }
+
+
+def _get_user_project_names(user):
+    """All projects a user is associated with: client, manager, member, or vendor."""
+    names = set()
+    for row in frappe.get_all("Project Info", filters={"client": user}, fields=["name"]):
+        names.add(row["name"])
+    for row in frappe.get_all("Project Info", filters={"project_manager": user}, fields=["name"]):
+        names.add(row["name"])
+    for row in frappe.get_all("Project Member", filters={"user": user}, fields=["parent"]):
+        names.add(row["parent"])
+    vendor = _get_vendor_for_user(user)
+    if vendor:
+        for row in frappe.get_all("Project Vendors", filters={"vendor": vendor}, fields=["parent"]):
+            names.add(row["parent"])
+    return names
+
+
+def _is_client(user=None):
+    user = user or frappe.session.user
+    return "Client" in frappe.get_roles(user)
+
+
+def _can_access_project(project, user=None):
+    """Whether the current user can access the given project.
+
+    Only clients are restricted to their own projects; all other roles
+    (manager, member, vendor) can access any project.
+    """
+    user = user or frappe.session.user
+    if _is_client(user):
+        return project in _get_user_project_names(user)
+    return True
+
+
 @frappe.whitelist()
 def get_projects():
     projects = frappe.get_all(
         "Project Info",
+        filters={},
         fields=[
             "name",
             "project_name",
@@ -94,9 +156,11 @@ def get_projects():
 
 
 @frappe.whitelist()
-def get_project(name=None):
+def get_project(name=None, portal=None):
     if not name:
         return None
+    if portal == "client" and not _can_access_project(name):
+        frappe.throw("You are not associated with this project", frappe.PermissionError)
     try:
         project = frappe.get_doc("Project Info", name)
         data = project.as_dict()
@@ -116,10 +180,16 @@ def get_project(name=None):
 
 
 @frappe.whitelist()
-def get_deliverables(project=None):
+def get_deliverables(project=None, portal=None):
     filters = {}
     if project:
+        if portal == "client" and not _can_access_project(project):
+            frappe.throw("You are not associated with this project", frappe.PermissionError)
         filters["project"] = project
+    else:
+        if portal == "client":
+            names = sorted(_get_user_project_names(frappe.session.user))
+            filters["project"] = ["in", names]
 
     deliverables = frappe.get_all(
         "Deliverable",
@@ -313,7 +383,7 @@ def get_deliverable(name=None):
 
 
 @frappe.whitelist()
-def get_tasks(project=None, deliverable=None, assigned_to=None):
+def get_tasks(project=None, deliverable=None, assigned_to=None, portal=None):
     filters = {}
     if project:
         filters["project"] = project
@@ -321,6 +391,11 @@ def get_tasks(project=None, deliverable=None, assigned_to=None):
         filters["deliverable"] = deliverable
     if assigned_to:
         filters["assigned_to"] = assigned_to
+    if portal == "client":
+        if project and not _can_access_project(project):
+            frappe.throw("You are not associated with this project", frappe.PermissionError)
+        elif not project:
+            filters["project"] = ["in", sorted(_get_user_project_names(frappe.session.user))]
 
     tasks = frappe.get_all(
         "Project Task",
@@ -439,10 +514,96 @@ def update_task_status(name=None, status=None):
     return {"status": "ok"}
 
 
+def _get_project_users(project):
+    """Return the users associated with a project: manager, client, members, vendors."""
+    users = {"project_manager": None, "client": None, "members": set(), "vendors": set()}
+    if not project:
+        return users
+
+    doc = frappe.get_cached_doc("Project Info", project)
+    users["project_manager"] = doc.get("project_manager")
+    users["client"] = doc.get("client")
+    for m in doc.get("project_members") or []:
+        if m.get("user"):
+            users["members"].add(m.get("user"))
+    for v in doc.get("vendors") or []:
+        if v.get("vendor"):
+            vendor_user = frappe.db.get_value("Vendor", v.get("vendor"), "user")
+            if vendor_user:
+                users["vendors"].add(vendor_user)
+    return users
+
+
+def _can_manage_deliverable(deliverable):
+    """Whether the current user is associated with the deliverable's project."""
+    user = frappe.session.user
+    if user == "Administrator" or "System Manager" in frappe.get_roles():
+        return True
+
+    roles = set(frappe.get_roles())
+    users = _get_project_users(deliverable.get("project"))
+    if "Project Manager" in roles:
+        return users["project_manager"] == user or user in users["members"]
+    if "Project Member" in roles:
+        return user in users["members"]
+    if "Client" in roles:
+        return users["client"] == user
+    if "Vendor" in roles:
+        return user in users["vendors"]
+    return False
+
+
+@frappe.whitelist()
+def get_deliverable_access(name=None):
+    """Whether the current user is associated with this deliverable's project."""
+    if not name:
+        return {"can_manage": False}
+    deliverable = frappe.get_doc("Deliverable", name)
+    return {"can_manage": _can_manage_deliverable(deliverable)}
+
+
+@frappe.whitelist()
+def get_my_projects():
+    """Projects associated with the current user (as client, member, manager, or vendor)."""
+    user = frappe.session.user
+    if user == "Guest":
+        return []
+
+    if _is_client(user):
+        project_names = _get_user_project_names(user)
+    elif user == "Administrator" or "System Manager" in frappe.get_roles():
+        project_names = {row["name"] for row in frappe.get_all("Project Info", fields=["name"])}
+    else:
+        project_names = _get_user_project_names(user)
+
+    projects = []
+    for name in sorted(project_names):
+        try:
+            doc = frappe.get_cached_doc("Project Info", name)
+        except frappe.DoesNotExistError:
+            continue
+        projects.append({
+            "name": name,
+            "project_name": doc.get("project_name"),
+            "status": doc.get("status"),
+            "progress": doc.get("progress"),
+            "client": doc.get("client"),
+            "project_manager": doc.get("project_manager"),
+            "start_date": doc.get("start_date"),
+            "end_date": doc.get("end_date"),
+            "deliverables": get_deliverables_with_details(project=name) or [],
+        })
+    return projects
+
+
 @frappe.whitelist()
 def update_deliverable_status(name=None, action=None):
     if not name or not action:
         frappe.throw("Name and action are required")
+
+    deliverable = frappe.get_doc("Deliverable", name)
+    if not _can_manage_deliverable(deliverable):
+        frappe.throw("You are not associated with this project", frappe.PermissionError)
 
     transitions_map = {
         "Submit for Approval": "Ready for Approval",

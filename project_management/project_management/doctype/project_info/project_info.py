@@ -26,6 +26,40 @@ class ProjectInfo(Document):
         self.sync_external_channel()
         self.sync_discussion_channel()
 
+    def on_trash(self):
+        self._delete_raven_docs()
+        self._delete_linked_project_docs()
+
+    # ----------------------------------------------------
+    # Cascade Delete
+    # ----------------------------------------------------
+
+    def _delete_raven_docs(self):
+        if not frappe.db.exists("DocType", "Raven Channel"):
+            return
+
+        channels = frappe.get_all(
+            "Raven Channel",
+            filters={"linked_doctype": "Project Info", "linked_document": self.name},
+            pluck="name",
+        )
+
+        for channel in channels:
+            frappe.delete_doc("Raven Channel", channel, ignore_permissions=True)
+
+        if self.raven_workspace and frappe.db.exists("Raven Workspace", self.raven_workspace):
+            frappe.db.set_value("Project Info", self.name, "raven_workspace", None)
+            frappe.delete_doc("Raven Workspace", self.raven_workspace, ignore_permissions=True)
+
+    def _delete_linked_project_docs(self):
+        for doctype, fieldname in [
+            ("Time Log", "project"),
+            ("Project Task", "project"),
+            ("Deliverable", "project"),
+        ]:
+            for name in frappe.get_all(doctype, filters={fieldname: self.name}, pluck="name"):
+                frappe.delete_doc(doctype, name, ignore_permissions=True)
+
     # ----------------------------------------------------
     # Workspace
     # ----------------------------------------------------

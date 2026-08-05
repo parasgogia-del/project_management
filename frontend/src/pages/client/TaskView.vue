@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ task?.title || 'Loading...' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ task?.project }}</p>
@@ -15,8 +15,8 @@
         <div class="lg:col-span-2 space-y-6">
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center gap-3 mb-4">
-              <Badge :label="task.status" :color-map="statusColorMap" />
-              <Badge :label="task.priority" :color-map="statusColorMap" />
+              <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
+              <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
             </div>
             <p class="text-sm text-gray-600">{{ task.description || 'No description' }}</p>
             <div class="grid grid-cols-3 gap-4 mt-4 text-sm">

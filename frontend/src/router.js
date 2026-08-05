@@ -9,6 +9,12 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/pages/Register.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/no-access',
     name: 'NoAccess',
     component: () => import('@/pages/NoAccess.vue'),
@@ -28,6 +34,18 @@ const routes = [
         path: 'projects',
         name: 'ProjectList',
         component: () => import('@/pages/manager/ProjectList.vue'),
+        meta: { roles: ['Project Manager'] },
+      },
+      {
+        path: 'deliverables',
+        name: 'AllDeliverables',
+        component: () => import('@/pages/manager/AllDeliverables.vue'),
+        meta: { roles: ['Project Manager'] },
+      },
+      {
+        path: 'tasks',
+        name: 'AllTasks',
+        component: () => import('@/pages/manager/AllTasks.vue'),
         meta: { roles: ['Project Manager'] },
       },
       {
@@ -89,6 +107,12 @@ const routes = [
         path: 'member/dashboard',
         name: 'MemberDashboard',
         component: () => import('@/pages/member/Dashboard.vue'),
+        meta: { roles: ['Project Manager', 'Project Member'] },
+      },
+      {
+        path: 'member/project/:id',
+        name: 'MemberProjectDetail',
+        component: () => import('@/pages/member/ProjectDetail.vue'),
         meta: { roles: ['Project Manager', 'Project Member'] },
       },
       {
@@ -172,8 +196,7 @@ router.beforeEach(async (to) => {
 
   if (!isLoggedIn) {
     if (to.meta.public) return true
-    window.location.href = '/login?redirect-to=/project_management'
-    return false
+    return '/login'
   }
 
   if (to.meta.public) {

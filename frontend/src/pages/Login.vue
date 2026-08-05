@@ -14,7 +14,7 @@
           <Input v-model="email" type="email" label="Email" placeholder="you@example.com" />
           <Input v-model="password" type="password" label="Password" placeholder="Password" />
           <Button
-            appearance="primary"
+            theme="blue" variant="solid"
             class="w-full"
             :loading="loading"
             :loading-text="loading ? 'Signing in...' : null"
@@ -22,7 +22,15 @@
           >Sign In</Button>
         </div>
 
-        <p v-if="error" class="text-xs text-red-500 text-center mt-3">{{ error }}</p>
+        <div class="mt-4 text-center space-y-2">
+          <div>
+            <a class="text-xs text-blue-600 hover:underline" :href="`/login#forgot`">Forgot password?</a>
+          </div>
+          <div>
+            <span class="text-xs text-gray-400">Don't have an account? </span>
+            <a class="text-xs text-blue-600 hover:underline cursor-pointer" @click="$router.push('/register')">Create a new account</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -54,7 +62,7 @@ export default {
         })
         window.location.reload()
       } catch (err) {
-        this.error = err.message || 'Login failed'
+        // no-op
       } finally {
         this.loading = false
       }

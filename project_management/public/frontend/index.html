@@ -5,8 +5,8 @@
     <link rel="icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Project Management</title>
-    <script type="module" crossorigin src="/assets/index-rC4XNReh.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DBr0Ohug.css">
+    <script type="module" crossorigin src="/assets/project_management/frontend/assets/index-DsuW5bok.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/project_management/frontend/assets/index-qFnETPvA.css">
   </head>
   <body>
     <div id="app"></div>
@@ -25,5 +25,12 @@
         }
       })();
     </script>
-  </body>
+  
+          <script>
+              {% for key in boot %}
+              window["{{ key }}"] = {{ boot[key] | tojson }};
+              {% endfor %}
+          </script>
+          </body>
+          
 </html>

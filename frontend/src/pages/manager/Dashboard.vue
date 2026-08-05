@@ -6,7 +6,7 @@
         <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
         <p class="text-sm text-gray-500 mt-0.5">Overview of your projects and tasks</p>
       </div>
-      <Button route="/project/new" appearance="primary" icon-left="plus">
+      <Button route="/project/new" theme="blue" variant="solid" icon-left="plus">
         New Project
       </Button>
     </div>
@@ -53,7 +53,7 @@
                   <p class="text-sm font-medium text-gray-800 truncate">{{ project.project_name }}</p>
                   <p class="text-xs text-gray-400">{{ project.client }}</p>
                 </div>
-                <Badge :label="project.status" :color-map="statusColorMap" />
+                <Badge :label="project.status" :theme="statusColorMap[project.status] || 'gray'" />
               </div>
               <ProgressBar :value="project.progress || 0" />
             </div>
@@ -66,12 +66,12 @@
             <h2 class="text-sm font-semibold text-gray-800">Progress Report</h2>
             <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5">
               <Button
-                appearance="minimal"
+                variant="ghost"
                 :active="reportPeriod === 'daily'"
                 @click="reportPeriod = 'daily'"
               >Daily</Button>
               <Button
-                appearance="minimal"
+                variant="ghost"
                 :active="reportPeriod === 'weekly'"
                 @click="reportPeriod = 'weekly'"
               >Weekly</Button>
@@ -133,8 +133,8 @@
                 <p class="text-xs text-gray-400">{{ task.project }}</p>
               </div>
               <div class="flex items-center gap-2 ml-4">
-                <Badge :label="task.priority" :color-map="statusColorMap" />
-                <Badge :label="task.status" :color-map="statusColorMap" />
+                <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
+                <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ project?.project_name || 'Loading...' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project Progress</p>
@@ -21,7 +21,7 @@
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-sm font-semibold text-gray-800">Members</h2>
-          <Button appearance="minimal" icon-left="plus" @click="showInviteModal = true">Invite Member</Button>
+          <Button variant="ghost" icon-left="plus" @click="showInviteModal = true">Invite Member</Button>
         </div>
         <div v-if="!project.project_members?.length" class="text-xs text-gray-400 text-center py-2">No members</div>
         <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -50,7 +50,7 @@
               <p class="text-sm font-medium text-gray-800">{{ d.title }}</p>
               <p class="text-xs text-gray-400">Due: {{ d.due_date || 'Not set' }}</p>
             </div>
-            <Badge :label="d.status" :color-map="statusColorMap" />
+            <Badge :label="d.status" :theme="statusColorMap[d.status] || 'gray'" />
           </div>
         </div>
       </div>
@@ -71,8 +71,8 @@
               <p class="text-xs text-gray-400">Due: {{ task.due_date || 'None' }} | {{ task.assigned_to || 'Unassigned' }}</p>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0 ml-3">
-              <Badge :label="task.priority" :color-map="statusColorMap" />
-              <Badge :label="task.status" :color-map="statusColorMap" />
+              <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
+              <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
             </div>
           </div>
         </div>
@@ -99,9 +99,9 @@
       </div>
     </template>
     <template #actions="{ close }">
-      <Button appearance="secondary" @click="close">Cancel</Button>
+      <Button variant="outline" @click="close">Cancel</Button>
       <Button
-        appearance="primary"
+        theme="blue" variant="solid"
         :disabled="!inviteForm.email"
         :loading="inviting"
         :loading-text="inviting ? 'Inviting...' : null"
@@ -138,9 +138,9 @@ export default {
       this.loading = true
       try {
         const [p, d, t] = await Promise.all([
-          useProject(this.projectId).fetch(),
-          useDeliverables(this.projectId).fetch(),
-          useTasks({ project: this.projectId }).fetch(),
+          useProject(this.projectId, 'client').fetch(),
+          useDeliverables(this.projectId, 'client').fetch(),
+          useTasks({ project: this.projectId, portal: 'client' }).fetch(),
         ])
         this.project = p
         this.deliverables = d || []

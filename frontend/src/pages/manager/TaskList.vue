@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <h1 class="text-xl font-bold text-gray-900">Tasks</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
-      <Button appearance="primary" icon-left="plus" @click="showCreateModal = true">New Task</Button>
+      <Button theme="blue" variant="solid" icon-left="plus" @click="showCreateModal = true">New Task</Button>
     </div>
 
     <div class="flex items-center gap-3">
@@ -53,8 +53,8 @@
               <p class="text-sm font-medium text-gray-800">{{ task.title }}</p>
               <p class="text-xs text-gray-400">{{ task.deliverable }}</p>
             </td>
-            <td class="px-5 py-3"><Badge :label="task.status" :color-map="statusColorMap" /></td>
-            <td class="px-5 py-3"><Badge :label="task.priority" :color-map="statusColorMap" /></td>
+            <td class="px-5 py-3"><Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" /></td>
+            <td class="px-5 py-3"><Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" /></td>
             <td class="px-5 py-3 text-xs text-gray-600">{{ task.assigned_to || '-' }}</td>
             <td class="px-5 py-3 text-xs text-gray-600">{{ task.due_date || '-' }}</td>
             <td class="px-5 py-3 text-xs text-gray-600">
@@ -83,7 +83,7 @@
                 label="Assigned To"
                 :options="memberOptions"
               />
-              <Button appearance="minimal" @click="assignToMe" class="mt-1">Assign to me</Button>
+              <Button variant="ghost" @click="assignToMe" class="mt-1">Assign to me</Button>
             </div>
             <Input
               type="select"
@@ -101,9 +101,9 @@
         </div>
       </template>
       <template #actions="{ close }">
-        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button variant="outline" @click="close">Cancel</Button>
         <Button
-          appearance="primary"
+          theme="blue" variant="solid"
           :disabled="!newTask.title || !newTask.deliverable"
           :loading="creating"
           :loading-text="creating ? 'Creating...' : null"

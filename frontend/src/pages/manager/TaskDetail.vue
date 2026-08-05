@@ -1,18 +1,18 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ task?.title || 'Loading...' }}</h1>
-          <Badge v-if="task" :label="task.status" :color-map="statusColorMap" />
-          <Badge v-if="task" :label="task.priority" :color-map="statusColorMap" />
+          <Badge v-if="task" :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
+          <Badge v-if="task" :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
         </div>
         <p v-if="task" class="text-sm text-gray-500 mt-0.5">
           {{ task.project }} / {{ task.deliverable }}
         </p>
       </div>
-      <Button v-if="task" appearance="secondary" @click="openEditModal">Edit Task</Button>
+      <Button v-if="task" variant="outline" @click="openEditModal">Edit Task</Button>
     </div>
 
     <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
@@ -60,7 +60,7 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-sm font-semibold text-gray-800">Time Logs</h2>
-              <Button appearance="minimal" icon-left="plus" @click="showTimeLogModal = true">Log Time</Button>
+              <Button variant="ghost" icon-left="plus" @click="showTimeLogModal = true">Log Time</Button>
             </div>
             <div v-if="timeLogs.length === 0" class="text-xs text-gray-400 text-center py-4">
               No time logged yet
@@ -96,7 +96,7 @@
                 :key="status"
                 @click="updateStatus(status)"
                 :disabled="task.status === status || updating"
-                appearance="minimal"
+                variant="ghost"
                 :active="task.status === status"
                 class="w-full"
               >
@@ -126,9 +126,9 @@
         </div>
       </template>
       <template #actions="{ close }">
-        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button variant="outline" @click="close">Cancel</Button>
         <Button
-          appearance="primary"
+          theme="blue" variant="solid"
           :disabled="!timeLogForm.hours"
           :loading="loggingTime"
           :loading-text="loggingTime ? 'Saving...' : null"
@@ -149,7 +149,7 @@
                 label="Assigned To"
                 :options="assigneeOptions"
               />
-              <Button appearance="minimal" @click="assignEditToMe" class="mt-1">Assign to me</Button>
+              <Button variant="ghost" @click="assignEditToMe" class="mt-1">Assign to me</Button>
             </div>
             <Input
               type="select"
@@ -167,9 +167,9 @@
         </div>
       </template>
       <template #actions="{ close }">
-        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button variant="outline" @click="close">Cancel</Button>
         <Button
-          appearance="primary"
+          theme="blue" variant="solid"
           :disabled="!editForm.title"
           :loading="savingTask"
           :loading-text="savingTask ? 'Saving...' : null"

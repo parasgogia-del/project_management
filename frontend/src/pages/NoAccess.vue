@@ -9,7 +9,7 @@
         <p class="text-xs text-gray-400 mb-6">
           Your account does not have access to this application.
         </p>
-        <Button appearance="primary" class="w-full" @click="logout">Logout</Button>
+        <Button theme="blue" variant="solid" class="w-full" @click="logout">Logout</Button>
       </div>
     </div>
   </div>

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">Reports</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
@@ -10,12 +10,12 @@
 
     <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
       <Button
-        appearance="minimal"
+        variant="ghost"
         :active="period === 'daily'"
         @click="period = 'daily'"
       >Daily</Button>
       <Button
-        appearance="minimal"
+        variant="ghost"
         :active="period === 'weekly'"
         @click="period = 'weekly'"
       >Weekly</Button>
@@ -91,7 +91,7 @@
               <p class="text-sm text-gray-800">{{ t.title }}</p>
               <p class="text-xs text-gray-400">{{ t.assigned_to || 'Unassigned' }}</p>
             </div>
-            <Badge :label="t.status" :color-map="statusColorMap" />
+            <Badge :label="t.status" :theme="statusColorMap[t.status] || 'gray'" />
           </div>
         </div>
         <p v-else class="text-xs text-gray-400 text-center py-4">No tasks</p>

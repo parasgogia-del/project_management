@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">Deliverables</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
@@ -40,7 +40,7 @@
               <p class="text-sm font-medium text-gray-800">{{ d.title }}</p>
               <p class="text-xs text-gray-400">{{ d.description?.slice(0, 60) || 'No description' }}</p>
             </td>
-            <td class="px-5 py-3"><Badge :label="d.status" :color-map="statusColorMap" /></td>
+            <td class="px-5 py-3"><Badge :label="d.status" :theme="statusColorMap[d.status] || 'gray'" /></td>
             <td class="px-5 py-3 w-40">
               <ProgressBar :value="d.progress || 0" />
               <p class="text-[10px] text-gray-400 mt-0.5">{{ d.completed_tasks || 0 }}/{{ d.total_tasks || 0 }} tasks</p>

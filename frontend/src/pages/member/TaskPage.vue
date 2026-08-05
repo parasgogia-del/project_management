@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ task?.title || 'Loading...' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ task?.project }}</p>
@@ -16,8 +16,8 @@
           <!-- Task Info -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center gap-3 mb-4">
-              <Badge :label="task.status" :color-map="statusColorMap" />
-              <Badge :label="task.priority" :color-map="statusColorMap" />
+              <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
+              <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
             </div>
             <p class="text-sm text-gray-600">{{ task.description || 'No description' }}</p>
             <div class="grid grid-cols-3 gap-4 mt-4 text-sm">
@@ -45,7 +45,7 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-sm font-semibold text-gray-800">Time Logs</h2>
-              <Button appearance="minimal" icon-left="plus" @click="showTimeLogModal = true">Log Time</Button>
+              <Button variant="ghost" icon-left="plus" @click="showTimeLogModal = true">Log Time</Button>
             </div>
             <div v-if="timeLogs.length === 0" class="text-xs text-gray-400 text-center py-4">No time logged</div>
             <div v-else class="space-y-2">
@@ -68,7 +68,7 @@
           <!-- Today's Focus Toggle -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <Button
-              appearance="minimal"
+              variant="ghost"
               :active="task.is_today_focus"
               :loading="focusing"
               @click="toggleFocus"
@@ -90,7 +90,7 @@
                 :key="s"
                 @click="updateStatus(s)"
                 :disabled="task.status === s || updating"
-                appearance="minimal"
+                variant="ghost"
                 :active="task.status === s"
                 class="w-full"
               >
@@ -119,9 +119,9 @@
         </div>
       </template>
       <template #actions="{ close }">
-        <Button appearance="secondary" @click="close">Cancel</Button>
+        <Button variant="outline" @click="close">Cancel</Button>
         <Button
-          appearance="primary"
+          theme="blue" variant="solid"
           :disabled="!timeLogForm.hours"
           :loading="loggingTime"
           :loading-text="loggingTime ? 'Saving...' : null"

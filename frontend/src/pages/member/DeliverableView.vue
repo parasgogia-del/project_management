@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ deliverable?.title || 'Loading...' }}</h1>
-          <Badge v-if="deliverable" :label="deliverable.status" :color-map="statusColorMap" />
+          <Badge v-if="deliverable" :label="deliverable.status" :theme="statusColorMap[deliverable.status] || 'gray'" />
         </div>
       </div>
     </div>
@@ -46,18 +46,19 @@
         <div class="space-y-6">
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Actions</h2>
-            <div class="space-y-2">
+            <div v-if="canManage" class="space-y-2">
               <Button
                 v-for="action in availableActions"
                 :key="action"
                 @click="performAction(action)"
                 :disabled="updating"
-                appearance="primary"
+                theme="blue" variant="solid"
                 class="w-full"
               >{{ action }}</Button>
               <p v-if="availableActions.length === 0 && !updating" class="text-xs text-gray-400 text-center">No actions available</p>
               <p v-if="updateError" class="text-xs text-red-500">{{ updateError }}</p>
             </div>
+            <p v-else class="text-xs text-gray-400 text-center">You are not associated with this project</p>
           </div>
 
           <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -71,7 +72,7 @@
                 class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 rounded transition-colors"
               >
                 <p class="text-xs text-gray-800 truncate">{{ t.title }}</p>
-                <Badge :label="t.status" :color-map="statusColorMap" />
+                <Badge :label="t.status" :theme="statusColorMap[t.status] || 'gray'" />
               </div>
             </div>
           </div>
@@ -108,7 +109,7 @@ export default {
   name: 'MemberDeliverableView',
   components: { FeatherIcon, Button, Badge, LoadingIndicator, FileUpload, CommentSection },
   data() {
-    return { deliverable: null, tasks: [], loading: true, updating: false, updateError: '' }
+    return { deliverable: null, tasks: [], loading: true, updating: false, updateError: '', canManage: true }
   },
   computed: {
     deliverableId() { return this.$route.params.id },
@@ -125,11 +126,13 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [d, t] = await Promise.all([
+        const [d, t, access] = await Promise.all([
           useDeliverable(this.deliverableId).fetch(),
           useTasks({ deliverable: this.deliverableId }).fetch(),
+          frappeRequest({ url: 'project_management.api.client.get_deliverable_access', method: 'POST', params: { name: this.deliverableId } }),
         ])
         this.deliverable = d; this.tasks = t || []
+        this.canManage = access?.can_manage ?? true
       } catch {} finally { this.loading = false }
     },
     async performAction(action) {

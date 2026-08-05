@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <h1 class="text-xl font-bold text-gray-900">Gantt Chart</h1>
         <p class="text-sm text-gray-500 mt-0.5">Project: {{ projectId }}</p>
       </div>
-      <Button appearance="secondary" icon-left="refresh-cw" @click="loadTasks">
+      <Button variant="outline" icon-left="refresh-cw" @click="loadTasks">
         Refresh
       </Button>
     </div>

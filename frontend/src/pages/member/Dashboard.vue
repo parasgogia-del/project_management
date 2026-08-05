@@ -25,6 +25,93 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-800 mb-3">Actions Needed</h2>
+      <p v-if="actionsDeliverables.length === 0 && openTasks.length === 0" class="text-xs text-gray-400 text-center py-4">
+        All caught up — nothing needs your attention right now.
+      </p>
+      <div v-else class="divide-y divide-gray-50">
+        <div
+          v-for="d in actionsDeliverables"
+          :key="d.name"
+          @click="$router.push(`/member/deliverable/${d.name}`)"
+          class="flex items-center justify-between py-2.5 cursor-pointer hover:bg-gray-50 rounded transition-colors"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ d.title }}</p>
+            <p class="text-xs text-gray-400">Changes Requested — waiting for you to start rework</p>
+          </div>
+          <Badge label="Changes Requested" :theme="statusColorMap['Changes Requested'] || 'gray'" />
+        </div>
+        <div
+          v-for="task in openTasks"
+          :key="task.name"
+          @click="$router.push(`/member/task/${task.name}`)"
+          class="flex items-center justify-between py-2.5 cursor-pointer hover:bg-gray-50 rounded transition-colors"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ task.title }}</p>
+            <p class="text-xs text-gray-400">{{ task.project }}</p>
+          </div>
+          <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-800 mb-3">My Projects</h2>
+      <p v-if="myProjects.length === 0" class="text-xs text-gray-400 text-center py-4">
+        You are not part of any project yet.
+      </p>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div
+          v-for="project in myProjects"
+          :key="project.name"
+          @click="$router.push(`/member/project/${project.name}`)"
+          class="p-3 rounded-lg border cursor-pointer transition-colors hover:border-blue-500 hover:bg-blue-50"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ project.project_name }}</p>
+            <Badge :label="project.status" :theme="statusColorMap[project.status] || 'gray'" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">{{ project.client || 'No client' }}</p>
+          <div class="mt-2">
+            <ProgressBar :value="project.progress || 0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-800">My Deliverables</h2>
+        <Button
+          v-if="selectedProject"
+          variant="ghost"
+          size="sm"
+          @click="selectedProject = ''"
+        >Show all</Button>
+      </div>
+      <p v-if="visibleDeliverables.length === 0" class="text-xs text-gray-400 text-center py-4">No deliverables</p>
+      <div v-else class="divide-y divide-gray-50">
+        <div
+          v-for="d in visibleDeliverables"
+          :key="d.name"
+          @click="$router.push(`/member/deliverable/${d.name}`)"
+          class="flex items-center justify-between py-2.5 cursor-pointer hover:bg-gray-50 rounded transition-colors"
+        >
+          <div class="min-w-0 flex-1 pr-4">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ d.title }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ d.project_name || d.project }} | Due: {{ d.due_date || 'None' }}</p>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0 w-40">
+            <ProgressBar :value="d.progress || 0" />
+            <Badge :label="d.status" :theme="statusColorMap[d.status] || 'gray'" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
       <h2 class="text-sm font-semibold text-gray-800 mb-3">Today's Focus</h2>
       <p v-if="todayTasks.length === 0" class="text-xs text-gray-400 text-center py-4">
         No tasks selected for today. Star tasks below to add them here.
@@ -40,7 +127,7 @@
             <p class="text-sm font-medium text-gray-800">{{ task.title }}</p>
             <p class="text-xs text-gray-400">{{ task.project }}</p>
           </div>
-          <Badge :label="task.status" :color-map="statusColorMap" />
+          <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
         </div>
       </div>
     </div>
@@ -56,7 +143,7 @@
         >
           <div class="flex items-center gap-3 min-w-0 flex-1" @click="$router.push(`/member/task/${task.name}`)">
             <Button
-              appearance="minimal"
+              variant="ghost"
               @click.stop="toggleFocus(task)"
               :title="task.is_today_focus ? 'Remove from today' : 'Add to today'"
               class="flex-shrink-0"
@@ -69,8 +156,8 @@
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <Badge :label="task.priority" :color-map="statusColorMap" />
-            <Badge :label="task.status" :color-map="statusColorMap" />
+            <Badge :label="task.priority" :theme="statusColorMap[task.priority] || 'gray'" />
+            <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
           </div>
         </div>
       </div>
@@ -86,7 +173,7 @@
           class="flex items-center justify-between py-2"
         >
           <p class="text-sm text-gray-600 line-through">{{ task.title }}</p>
-          <Badge label="Completed" :color-map="statusColorMap" />
+          <Badge label="Completed" :theme="statusColorMap['Completed'] || 'gray'" />
         </div>
       </div>
     </div>
@@ -96,15 +183,19 @@
 <script>
 import { frappeRequest, Badge, Button } from 'frappe-ui'
 import { useTasks } from '@/data/resources'
+import { statusColorMap } from '@/utils/statusColors'
+import ProgressBar from '@/components/ProgressBar.vue'
 
 export default {
   name: 'MemberDashboard',
-  components: { Badge, Button },
+  components: { Badge, Button, ProgressBar },
   data() {
     return {
       myTasks: [],
+      myProjects: [],
       sessionUser: '',
       todayHours: 0,
+      selectedProject: '',
     }
   },
   computed: {
@@ -113,6 +204,25 @@ export default {
     },
     completedTasks() {
       return this.myTasks.filter(t => t.status === 'Completed')
+    },
+    allDeliverables() {
+      const list = []
+      for (const project of this.myProjects) {
+        for (const d of project.deliverables || []) {
+          list.push({ ...d, project_name: project.project_name })
+        }
+      }
+      return list
+    },
+    actionsDeliverables() {
+      return this.allDeliverables.filter(d => d.status === 'Changes Requested')
+    },
+    openTasks() {
+      return this.myTasks.filter(t => t.status !== 'Completed')
+    },
+    visibleDeliverables() {
+      if (!this.selectedProject) return this.allDeliverables
+      return this.allDeliverables.filter(d => d.project === this.selectedProject)
     },
   },
   mounted() {
@@ -124,15 +234,21 @@ export default {
         const userRes = await frappeRequest({ url: 'project_management.api.client.get_session_user', method: 'POST' })
         this.sessionUser = userRes.user
         console.log('Dashboard User:', userRes.user, '| Roles:', userRes.roles)
-        const [tasksRes, hoursRes] = await Promise.all([
+        const [tasksRes, hoursRes, projectsRes] = await Promise.all([
           useTasks({ assigned_to: this.sessionUser }).fetch(),
           frappeRequest({ url: 'project_management.api.client.get_today_hours', method: 'POST' }),
+          frappeRequest({ url: 'project_management.api.client.get_my_projects', method: 'POST' }),
         ])
         this.myTasks = tasksRes || []
         this.todayHours = hoursRes || 0
+        this.myProjects = projectsRes || []
       } catch {
         this.myTasks = []
+        this.myProjects = []
       }
+    },
+    toggleProject(name) {
+      this.selectedProject = this.selectedProject === name ? '' : name
     },
     async toggleFocus(task) {
       try {

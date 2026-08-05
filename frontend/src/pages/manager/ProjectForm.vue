@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div>
         <h1 class="text-xl font-bold text-gray-900">{{ isEdit ? 'Edit Project' : 'Create Project' }}</h1>
         <p class="text-sm text-gray-500 mt-0.5">{{ isEdit ? 'Update project details' : 'Set up a new project' }}</p>
@@ -17,15 +17,17 @@
         />
 
         <div class="grid grid-cols-2 gap-4">
-          <Input
+          <Autocomplete
             v-model="form.client"
+            :options="formOptions.clients"
             label="Client *"
-            placeholder="Client name"
+            placeholder="Search or select a client"
           />
-          <Input
+          <Autocomplete
             v-model="form.project_manager"
+            :options="formOptions.project_managers"
             label="Project Manager"
-            placeholder="Manager email"
+            placeholder="Search or select a manager"
           />
         </div>
 
@@ -62,7 +64,7 @@
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold text-gray-800">Project Members</h2>
-        <Button appearance="minimal" icon-left="plus" @click="addMember">Add Member</Button>
+        <Button variant="ghost" icon-left="plus" @click="addMember">Add Member</Button>
       </div>
       <div v-if="form.project_members.length === 0" class="text-xs text-gray-400 text-center py-4">
         No members added
@@ -73,9 +75,10 @@
           :key="idx"
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
-          <Input
+          <Autocomplete
             v-model="member.user"
-            placeholder="User email"
+            :options="formOptions.members"
+            placeholder="Search or select a member"
             class="flex-1"
           />
           <Input
@@ -90,7 +93,7 @@
             label="Active"
             class="shrink-0"
           />
-          <Button appearance="minimal" icon="x" @click="removeMember(idx)" class="shrink-0" />
+          <Button variant="ghost" icon="x" @click="removeMember(idx)" class="shrink-0" />
         </div>
       </div>
     </div>
@@ -98,7 +101,7 @@
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold text-gray-800">Vendors</h2>
-        <Button appearance="minimal" icon-left="plus" @click="addVendor">Add Vendor</Button>
+        <Button variant="ghost" icon-left="plus" @click="addVendor">Add Vendor</Button>
       </div>
       <div v-if="form.vendors.length === 0" class="text-xs text-gray-400 text-center py-4">
         No vendors added
@@ -109,9 +112,10 @@
           :key="idx"
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
-          <Input
+          <Autocomplete
             v-model="vendor.vendor"
-            placeholder="Vendor name"
+            :options="formOptions.vendors"
+            placeholder="Search or select a vendor"
             class="flex-1"
           />
           <Input
@@ -120,15 +124,15 @@
             :options="vendorStatusOptions"
             class="w-36 shrink-0"
           />
-          <Button appearance="minimal" icon="x" @click="removeVendor(idx)" class="shrink-0" />
+          <Button variant="ghost" icon="x" @click="removeVendor(idx)" class="shrink-0" />
         </div>
       </div>
     </div>
 
     <div class="flex items-center justify-end gap-3">
-      <Button appearance="secondary" @click="$router.back()">Cancel</Button>
+      <Button variant="outline" @click="$router.back()">Cancel</Button>
       <Button
-        appearance="primary"
+        theme="blue" variant="solid"
         :disabled="!form.project_name || !form.client"
         :loading="saving"
         :loading-text="saving ? 'Saving...' : null"
@@ -141,17 +145,18 @@
 </template>
 
 <script>
-import { frappeRequest, Button, Input } from 'frappe-ui'
+import { frappeRequest, Button, Input, Autocomplete } from 'frappe-ui'
 import { useProject } from '@/data/resources'
 
 export default {
   name: 'ProjectForm',
-  components: { Button, Input },
+  components: { Button, Input, Autocomplete },
   data() {
     return {
       isEdit: false,
       saving: false,
       error: '',
+      formOptions: { clients: [], project_managers: [], members: [], vendors: [] },
       projectStatusOptions: ['Planning', 'In Progress', 'Completed', 'On Hold', 'Cancelled'],
       memberRoleOptions: ['Project Manager', 'Developer', 'Designer', 'QA', 'Business Analyst', 'UI/UX Designer', 'Client Reviewer'],
       vendorStatusOptions: ['Active', 'Inactive', 'Suspended'],
@@ -169,12 +174,22 @@ export default {
     }
   },
   mounted() {
+    this.loadFormOptions()
     if (this.$route.params.id) {
       this.isEdit = true
       this.loadProject(this.$route.params.id)
     }
   },
   methods: {
+    async loadFormOptions() {
+      try {
+        const res = await frappeRequest({
+          url: 'project_management.api.client.get_form_options',
+          method: 'POST',
+        })
+        this.formOptions = res || this.formOptions
+      } catch {}
+    },
     async loadProject(name) {
       try {
         const project = await useProject(name).fetch()

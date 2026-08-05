@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ deliverable?.title || 'Loading...' }}</h1>
-          <Badge v-if="deliverable" :label="deliverable.status" :color-map="statusColorMap" />
+          <Badge v-if="deliverable" :label="deliverable.status" :theme="statusColorMap[deliverable.status] || 'gray'" />
         </div>
       </div>
     </div>
@@ -51,7 +51,7 @@
                 class="flex items-center justify-between py-2"
               >
                 <p class="text-sm text-gray-800 truncate">{{ t.title }}</p>
-                <Badge :label="t.status" :color-map="statusColorMap" />
+                <Badge :label="t.status" :theme="statusColorMap[t.status] || 'gray'" />
               </div>
             </div>
           </div>
@@ -67,15 +67,18 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Review Actions</h2>
             <div v-if="!selectedAction" class="space-y-2">
-              <Button
-                v-for="action in availableActions"
-                :key="action"
-                @click="selectedAction = action"
-                :disabled="updating"
-                :appearance="action === 'Approve' ? 'success' : 'warning'"
-                class="w-full"
-              >{{ action }}</Button>
-              <p v-if="!availableActions.length" class="text-xs text-gray-400 text-center">No actions available</p>
+              <template v-if="canManage">
+                <Button
+                  v-for="action in availableActions"
+                  :key="action"
+                  @click="selectedAction = action"
+                  :disabled="updating"
+                  :theme="action === 'Approve' ? 'green' : 'red'" :variant="action === 'Approve' ? 'solid' : 'outline'"
+                  class="w-full"
+                >{{ action }}</Button>
+                <p v-if="!availableActions.length" class="text-xs text-gray-400 text-center">No actions available</p>
+              </template>
+              <p v-else class="text-xs text-gray-400 text-center">You are not associated with this project</p>
             </div>
             <div v-else class="space-y-3">
               <p class="text-sm font-medium text-gray-700">{{ selectedAction === 'Approve' ? 'Approve this deliverable?' : 'Request changes — describe what needs to change:' }}</p>
@@ -87,14 +90,14 @@
               />
               <div class="flex gap-2">
                 <Button
-                  :appearance="selectedAction === 'Approve' ? 'success' : 'warning'"
+                  :theme="selectedAction === 'Approve' ? 'green' : 'red'" :variant="selectedAction === 'Approve' ? 'solid' : 'outline'"
                   :disabled="selectedAction === 'Request Changes' && !feedbackText.trim()"
                   :loading="updating"
                   :loading-text="updating ? 'Submitting...' : null"
                   @click="performAction(selectedAction)"
                   class="flex-1"
                 >Submit</Button>
-                <Button appearance="secondary" :disabled="updating" @click="cancelReview">Cancel</Button>
+                <Button variant="outline" :disabled="updating" @click="cancelReview">Cancel</Button>
               </div>
               <p v-if="updateError" class="text-xs text-red-500">{{ updateError }}</p>
             </div>
@@ -136,7 +139,7 @@ export default {
   data() {
     return {
       deliverable: null, tasks: [], loading: true, updating: false, updateError: '',
-      selectedAction: null, feedbackText: '',
+      selectedAction: null, feedbackText: '', canManage: true,
     }
   },
   computed: {
@@ -151,12 +154,14 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [d, t] = await Promise.all([
+        const [d, t, access] = await Promise.all([
           useDeliverable(this.deliverableId).fetch(),
           useTasks({ deliverable: this.deliverableId }).fetch(),
+          frappeRequest({ url: 'project_management.api.client.get_deliverable_access', method: 'POST', params: { name: this.deliverableId } }),
         ])
         this.deliverable = d
         this.tasks = t || []
+        this.canManage = access?.can_manage ?? true
       } catch {} finally { this.loading = false }
     },
     async performAction(action) {

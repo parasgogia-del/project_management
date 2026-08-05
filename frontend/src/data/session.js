@@ -17,9 +17,9 @@ export const session = reactive({
 
 export function getPortal() {
   const roles = session.roles
+  if (roles.includes('Client')) return '/client/dashboard'
   if (roles.includes('Project Manager')) return '/'
   if (roles.includes('Project Member')) return '/member/dashboard'
-  if (roles.includes('Client')) return '/client/dashboard'
   if (roles.includes('Vendor')) return '/vendor/dashboard'
   return null
 }

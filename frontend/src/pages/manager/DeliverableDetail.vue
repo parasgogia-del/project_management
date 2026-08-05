@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-3">
-      <Button appearance="minimal" icon="arrow-left" @click="$router.back()" />
+      <Button variant="ghost" icon="arrow-left" @click="$router.back()" />
       <div class="flex-1">
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold text-gray-900">{{ deliverable?.title || 'Loading...' }}</h1>
-          <Badge v-if="deliverable" :label="deliverable.status" :color-map="statusColorMap" />
+          <Badge v-if="deliverable" :label="deliverable.status" :theme="statusColorMap[deliverable.status] || 'gray'" />
         </div>
         <p v-if="deliverable" class="text-sm text-gray-500 mt-0.5">
           Project: {{ deliverable.project }}
@@ -63,7 +63,7 @@
                   <p class="text-sm text-gray-800 truncate">{{ task.title }}</p>
                   <p class="text-xs text-gray-400">{{ task.assigned_to || 'Unassigned' }}</p>
                 </div>
-                <Badge :label="task.status" :color-map="statusColorMap" />
+                <Badge :label="task.status" :theme="statusColorMap[task.status] || 'gray'" />
               </div>
             </div>
           </div>
@@ -79,19 +79,20 @@
           <!-- Workflow Actions -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Actions</h2>
-            <div class="space-y-2">
+            <div v-if="canManage" class="space-y-2">
               <Button
                 v-for="action in availableActions"
                 :key="action"
                 @click="performAction(action)"
                 :disabled="updating"
-                appearance="primary"
+                theme="blue" variant="solid"
                 class="w-full"
               >{{ action }}</Button>
-              <p v-if="availableActions.length === 0" class="text-xs text-gray-400 text-center">
+              <p v-if="availableActions.length === 0 && !updating" class="text-xs text-gray-400 text-center">
                 No actions available for current status
               </p>
             </div>
+            <p v-else class="text-xs text-gray-400 text-center">You are not associated with this project</p>
             <p v-if="updateError" class="text-xs text-red-500 mt-2">{{ updateError }}</p>
           </div>
 
@@ -140,6 +141,7 @@ export default {
       loading: true,
       updating: false,
       updateError: '',
+      canManage: true,
     }
   },
   computed: {
@@ -168,12 +170,14 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [dRes, tRes] = await Promise.all([
+        const [dRes, tRes, access] = await Promise.all([
           useDeliverable(this.deliverableId).fetch(),
           useTasks({ deliverable: this.deliverableId }).fetch(),
+          frappeRequest({ url: 'project_management.api.client.get_deliverable_access', method: 'POST', params: { name: this.deliverableId } }),
         ])
         this.deliverable = dRes
         this.tasks = tRes || []
+        this.canManage = access?.can_manage ?? true
       } catch {
         console.error('Failed to load deliverable')
       } finally {

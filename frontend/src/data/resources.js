@@ -1,19 +1,19 @@
 import { createResource } from 'frappe-ui'
 
 // Project detail
-export function useProject(name) {
+export function useProject(name, portal = '') {
   return createResource({
     url: 'project_management.api.client.get_project',
-    params: { name },
+    params: { name, portal },
     auto: false,
   })
 }
 
 // Deliverables
-export function useDeliverables(project) {
+export function useDeliverables(project, portal = '') {
   return createResource({
     url: 'project_management.api.client.get_deliverables',
-    params: { project },
+    params: { project, portal },
     auto: false,
   })
 }
@@ -121,7 +121,7 @@ export function useProfile() {
 }
 
 // Vendor APIs
-export function useVendorProjects(vendor_name) {
+export function useVendorProjects(vendor_name = '') {
   return createResource({
     url: 'project_management.api.vendor.get_vendor_projects',
     params: { vendor_name },
@@ -129,7 +129,7 @@ export function useVendorProjects(vendor_name) {
   })
 }
 
-export function useVendorDeliverables(vendor_name) {
+export function useVendorDeliverables(vendor_name = '') {
   return createResource({
     url: 'project_management.api.vendor.get_vendor_deliverables',
     params: { vendor_name },
@@ -137,7 +137,7 @@ export function useVendorDeliverables(vendor_name) {
   })
 }
 
-export function useVendorTasks(vendor_name) {
+export function useVendorTasks(vendor_name = '') {
   return createResource({
     url: 'project_management.api.vendor.get_vendor_tasks',
     params: { vendor_name },
