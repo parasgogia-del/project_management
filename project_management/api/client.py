@@ -221,19 +221,22 @@ def update_project(name=None, data=None):
         data = json.loads(data)
 
     allowed_fields = ["project_name", "client", "project_manager", "status", "start_date", "end_date", "description"]
-    filtered = {k: v for k, v in data.items() if k in allowed_fields}
 
-    for field, value in filtered.items():
-        frappe.db.set_value("Project Info", name, field, value)
+    doc = frappe.get_doc("Project Info", name)
+    for field, value in data.items():
+        if field in allowed_fields:
+            doc.set(field, value)
 
     if "project_members" in data:
-        _update_child_table("Project Info", name, "project_members", "Project Member", data["project_members"])
+        _replace_child_table(doc, "project_members", data["project_members"])
 
     if "vendors" in data:
-        _update_child_table("Project Info", name, "vendors", "Project Vendors", data["vendors"])
+        _replace_child_table(doc, "vendors", data["vendors"])
 
+    doc.flags.ignore_permissions = True
+    doc.save()
     frappe.db.commit()
-    return frappe.get_doc("Project Info", name).as_dict()
+    return doc.as_dict()
 
 @frappe.whitelist()
 @require_roles("Project Manager", "Client")
@@ -299,6 +302,18 @@ def update_task(name=None, data=None):
     doc.save()
     frappe.db.commit()
     return doc.as_dict()
+
+
+def _replace_child_table(doc, fieldname, rows):
+    """Replace a parent doc's child table rows in memory so the parent's
+    save() triggers on_update (which syncs Raven channels)."""
+    _skip = {"name", "doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
+
+    doc.set(fieldname, [])
+    for row in rows:
+        row_data = {k: v for k, v in row.items() if k not in _skip}
+        if row_data:
+            doc.append(fieldname, row_data)
 
 
 def _update_child_table(parent_doctype, parent_name, fieldname, child_doctype, rows):

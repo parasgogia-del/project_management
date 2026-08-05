@@ -225,6 +225,26 @@ class ProjectInfo(Document):
     # Sync Helpers
     # ----------------------------------------------------
 
+    def _find_channel(self, channel_name):
+        """Find a channel in this project's Raven workspace by its plain name."""
+        if not self.raven_workspace:
+            return None
+
+        names = frappe.get_all(
+            "Raven Channel",
+            filters={
+                "workspace": self.raven_workspace,
+                "channel_name": channel_name,
+            },
+            pluck="name",
+            limit=1,
+        )
+
+        if not names:
+            return None
+
+        return frappe.get_doc("Raven Channel", names[0])
+
     def sync_channel_members(self, channel, desired_members):
 
         desired_members = list(set(desired_members))
@@ -275,15 +295,10 @@ class ProjectInfo(Document):
 
     def sync_internal_channel(self):
 
-        channel_name = f"{self.project_name}-internal"
+        channel = self._find_channel("internal")
 
-        if not frappe.db.exists("Raven Channel", channel_name):
+        if not channel:
             return
-
-        channel = frappe.get_doc(
-            "Raven Channel",
-            channel_name
-        )
 
         members = []
 
@@ -306,15 +321,10 @@ class ProjectInfo(Document):
 
     def sync_external_channel(self):
 
-        channel_name = f"{self.project_name}-external"
+        channel = self._find_channel("external")
 
-        if not frappe.db.exists("Raven Channel", channel_name):
+        if not channel:
             return
-
-        channel = frappe.get_doc(
-            "Raven Channel",
-            channel_name
-        )
 
         members = []
 
@@ -343,12 +353,10 @@ class ProjectInfo(Document):
 
     def sync_discussion_channel(self):
 
-        channel_name = f"{self.raven_workspace}-discussion"
+        channel = self._find_channel("discussion")
 
-        if not frappe.db.exists("Raven Channel", channel_name):
+        if not channel:
             return
-
-        channel = frappe.get_doc("Raven Channel", channel_name)
 
         members = set()
 

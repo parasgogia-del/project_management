@@ -18,16 +18,18 @@
 
         <div class="grid grid-cols-2 gap-4">
           <Autocomplete
-            v-model="form.client"
+            :model-value="form.client"
             :options="formOptions.clients"
             label="Client *"
             placeholder="Search or select a client"
+            @change="form.client = $event?.value || ''"
           />
           <Autocomplete
-            v-model="form.project_manager"
+            :model-value="form.project_manager"
             :options="formOptions.project_managers"
             label="Project Manager"
             placeholder="Search or select a manager"
+            @change="form.project_manager = $event?.value || ''"
           />
         </div>
 
@@ -76,10 +78,11 @@
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
           <Autocomplete
-            v-model="member.user"
+            :model-value="member.user"
             :options="formOptions.members"
             placeholder="Search or select a member"
             class="flex-1"
+            @change="member.user = $event?.value || ''"
           />
           <Input
             type="select"
@@ -113,10 +116,11 @@
           class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
         >
           <Autocomplete
-            v-model="vendor.vendor"
+            :model-value="vendor.vendor"
             :options="formOptions.vendors"
             placeholder="Search or select a vendor"
             class="flex-1"
+            @change="vendor.vendor = $event?.value || ''"
           />
           <Input
             type="select"
