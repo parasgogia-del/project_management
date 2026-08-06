@@ -151,7 +151,7 @@ import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 const VENDOR_ACTIONS = {
-  'Draft': [],
+  'Draft': ['Start Work'],
   'WIP': [],
   'Ready for Approval': [],
   'Awaiting Client Review': [],

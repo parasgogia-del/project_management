@@ -74,6 +74,31 @@ def create_task(data=None):
     return doc.as_dict()
 
 
+@frappe.whitelist()
+@require_roles("Project Manager")
+def create_deliverable(data=None):
+    if not data:
+        frappe.throw("Data is required")
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+
+    if not data.get("title"):
+        frappe.throw("Title is required")
+
+    doc = frappe.get_doc({
+        "doctype": "Deliverable",
+        "project": data.get("project"),
+        "title": data.get("title"),
+        "description": data.get("description", ""),
+        "due_date": data.get("due_date"),
+        "status": data.get("status", "Draft"),
+    })
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return doc.as_dict()
+
+
 def _get_vendor_for_user(user):
     names = frappe.get_all("Vendor", filters={"user": user}, pluck="name")
     return names[0] if names else None
@@ -612,6 +637,42 @@ def get_my_projects():
 
 
 @frappe.whitelist()
+def get_member_projects():
+    """Member-portal only: projects where the current user is a linked project member.
+
+    Unlike get_my_projects, this always filters by the user's membership link,
+    regardless of System Manager/Administrator roles.
+    """
+    user = frappe.session.user
+    if user == "Guest":
+        return []
+
+    project_names = {
+        row["parent"]
+        for row in frappe.get_all("Project Member", filters={"user": user}, fields=["parent"], distinct=True)
+    }
+
+    projects = []
+    for name in sorted(project_names):
+        try:
+            doc = frappe.get_cached_doc("Project Info", name)
+        except frappe.DoesNotExistError:
+            continue
+        projects.append({
+            "name": name,
+            "project_name": doc.get("project_name"),
+            "status": doc.get("status"),
+            "progress": doc.get("progress"),
+            "client": doc.get("client"),
+            "project_manager": doc.get("project_manager"),
+            "start_date": doc.get("start_date"),
+            "end_date": doc.get("end_date"),
+            "deliverables": get_deliverables_with_details(project=name) or [],
+        })
+    return projects
+
+
+@frappe.whitelist()
 def update_deliverable_status(name=None, action=None):
     if not name or not action:
         frappe.throw("Name and action are required")
@@ -620,22 +681,27 @@ def update_deliverable_status(name=None, action=None):
     if not _can_manage_deliverable(deliverable):
         frappe.throw("You are not associated with this project", frappe.PermissionError)
 
-    transitions_map = {
-        "Submit for Approval": "Ready for Approval",
-        "Send for Approval": "Awaiting Client Review",
-        "Approve": "Approved",
-        "Request Changes": "Changes Requested",
-        "Start Rework": "WIP",
+    action_map = {
+        "Start Work": "Start Work",
+        "Submit for Approval": "Submit",
+        "Send for Approval": "Send to Client",
+        "Approve": "Approve",
+        "Request Changes": "Request Changes",
+        "Start Rework": "Resume Work",
     }
 
-    next_state = transitions_map.get(action)
-    if not next_state:
+    workflow_action = action_map.get(action)
+    if not workflow_action:
         frappe.throw(f"Invalid action: {action}")
 
-    frappe.db.set_value("Deliverable", name, "status", next_state)
+    from frappe.model.workflow import apply_workflow
+
+    doc = apply_workflow(frappe.as_json(deliverable.as_dict()), workflow_action)
+
+    frappe.db.set_value("Deliverable", name, "status", doc.workflow_state)
     frappe.db.commit()
 
-    return {"status": "ok", "workflow_state": next_state}
+    return {"status": "ok", "workflow_state": doc.workflow_state}
 
 
 @frappe.whitelist()

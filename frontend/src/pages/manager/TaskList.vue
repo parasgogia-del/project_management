@@ -92,6 +92,12 @@
               :options="priorityOptions"
             />
           </div>
+          <Input
+            type="select"
+            v-model="newTask.assigned_vendor"
+            label="Assigned Vendor"
+            :options="vendorOptions"
+          />
           <div class="grid grid-cols-2 gap-4">
             <Input type="date" v-model="newTask.start_date" label="Start Date" />
             <Input type="date" v-model="newTask.due_date" label="Due Date" />
@@ -127,6 +133,7 @@ export default {
     return {
       tasks: [],
       projectMembers: [],
+      projectVendors: [],
       projectDeliverables: [],
       loading: true,
       statusFilter: '',
@@ -137,6 +144,7 @@ export default {
         title: '',
         deliverable: '',
         assigned_to: '',
+        assigned_vendor: '',
         priority: 'Medium',
         start_date: '',
         due_date: '',
@@ -179,6 +187,12 @@ export default {
         ...this.projectMembers.map(member => ({ label: member, value: member })),
       ]
     },
+    vendorOptions() {
+      return [
+        { label: 'No vendor', value: '' },
+        ...this.projectVendors.map(vendor => ({ label: vendor, value: vendor })),
+      ]
+    },
     priorityOptions() {
       return ['Low', 'Medium', 'High', 'Critical']
     },
@@ -204,10 +218,12 @@ export default {
         ])
         this.tasks = tasksRes || []
         this.projectMembers = (projectRes?.project_members || []).map(m => m.user)
+        this.projectVendors = (projectRes?.vendors || []).map(v => v.vendor).filter(Boolean)
         this.projectDeliverables = deliverablesRes || []
       } catch {
         this.tasks = []
         this.projectMembers = []
+        this.projectVendors = []
         this.projectDeliverables = []
       } finally {
         this.loading = false
@@ -244,7 +260,7 @@ export default {
       }
     },
     resetNewTask() {
-      this.newTask = { title: '', deliverable: '', assigned_to: '', priority: 'Medium', start_date: '', due_date: '', estimated_hours: null, description: '' }
+      this.newTask = { title: '', deliverable: '', assigned_to: '', assigned_vendor: '', priority: 'Medium', start_date: '', due_date: '', estimated_hours: null, description: '' }
     },
   },
 }

@@ -237,7 +237,7 @@ export default {
         const [tasksRes, hoursRes, projectsRes] = await Promise.all([
           useTasks({ assigned_to: this.sessionUser }).fetch(),
           frappeRequest({ url: 'project_management.api.client.get_today_hours', method: 'POST' }),
-          frappeRequest({ url: 'project_management.api.client.get_my_projects', method: 'POST' }),
+          frappeRequest({ url: 'project_management.api.client.get_member_projects', method: 'POST' }),
         ])
         this.myTasks = tasksRes || []
         this.todayHours = hoursRes || 0

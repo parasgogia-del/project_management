@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { FeatherIcon, Button, Badge, Avatar, LoadingIndicator } from 'frappe-ui'
+import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator } from 'frappe-ui'
 import { useProject, useTasks, useDeliverablesWithDetails } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
@@ -198,6 +198,11 @@ export default {
     async loadAll() {
       this.loading = true
       try {
+        const isMember = await this.isLinkedMember()
+        if (!isMember) {
+          this.$router.replace('/member/dashboard')
+          return
+        }
         const [projectRes, tasksRes, deliverablesRes] = await Promise.all([
           useProject(this.projectId).fetch(),
           useTasks({ project: this.projectId }).fetch(),
@@ -210,6 +215,14 @@ export default {
         console.error('Failed to load project', err)
       } finally {
         this.loading = false
+      }
+    },
+    async isLinkedMember() {
+      try {
+        const projects = await frappeRequest({ url: 'project_management.api.client.get_member_projects', method: 'POST' })
+        return (projects || []).some(p => p.name === this.projectId)
+      } catch {
+        return false
       }
     },
   },

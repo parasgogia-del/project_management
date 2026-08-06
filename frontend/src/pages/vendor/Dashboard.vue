@@ -114,42 +114,198 @@
     </div>
 
     <!-- Projects -->
-    <div class="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 class="text-sm font-semibold text-gray-800 mb-3">Projects</h2>
-      <div v-if="vendorProjects.length === 0" class="text-xs text-gray-400 text-center py-4">No projects</div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div
-          v-for="p in vendorProjects"
-          :key="p.name"
-          class="p-3 bg-gray-50 rounded-lg"
-        >
-          <p class="text-sm font-medium text-gray-800">{{ p.project_name }}</p>
-          <ProgressBar :value="p.progress || 0" />
-          <div class="flex items-center justify-between mt-2">
-            <Badge :label="p.status" :theme="statusColorMap[p.status] || 'gray'" />
-            <span class="text-xs text-gray-400">{{ p.client }}</span>
-          </div>
-        </div>
+<div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-outline-gray-2 px-4 py-3">
+    <div>
+      <h2 class="text-base font-semibold text-ink-gray-9">
+        Projects
+      </h2>
+      <p class="mt-0.5 text-sm text-ink-gray-5">
+        Projects assigned to you
+      </p>
+    </div>
+
+    <Badge
+      v-if="vendorProjects.length"
+      :label="String(vendorProjects.length)"
+      theme="gray"
+      size="sm"
+    />
+  </div>
+
+  <!-- Loading -->
+  <div v-if="loading" class="divide-y divide-outline-gray-2">
+    <div
+      v-for="n in 4"
+      :key="n"
+      class="flex h-16 items-center gap-3 px-4"
+    >
+      <Skeleton class="size-9 rounded-md" />
+
+      <div class="min-w-0 flex-1 space-y-2">
+        <Skeleton class="h-3 w-1/3" />
+        <Skeleton class="h-2.5 w-1/4" />
       </div>
+
+      <Skeleton class="h-5 w-16 rounded-md" />
     </div>
   </div>
+
+  <!-- Empty -->
+  <div
+    v-else-if="vendorProjects.length === 0"
+    class="flex flex-col items-center justify-center px-4 py-12"
+  >
+    <div
+      class="mb-3 flex size-10 items-center justify-center rounded-full bg-surface-gray-2"
+    >
+      <Icon
+        name="lucide-folder-open"
+        class="size-5 text-ink-gray-5"
+      />
+    </div>
+
+    <p class="text-sm font-medium text-ink-gray-7">
+      No projects
+    </p>
+
+    <p class="mt-1 text-xs text-ink-gray-5">
+      Projects assigned to you will appear here.
+    </p>
+  </div>
+
+  <!-- Projects List -->
+  <List
+    v-else
+    class="w-full list-row-px-4 max-sm:[--list-columns:minmax(0,1fr)_auto]"
+    :columns="[
+      'minmax(0,1fr)',
+      '8rem',
+      '12rem',
+      '8rem'
+    ]"
+    :row-height="68"
+  >
+    <ListHeader>
+      <ListHeaderCell>
+        Project
+      </ListHeaderCell>
+
+      <ListHeaderCell>
+        Status
+      </ListHeaderCell>
+
+      <ListHeaderCell class="max-sm:hidden">
+        Timeline
+      </ListHeaderCell>
+
+      <ListHeaderCell class="justify-end max-sm:hidden">
+        Progress
+      </ListHeaderCell>
+    </ListHeader>
+
+    <ListRows
+      :items="vendorProjects"
+      v-slot="{ item: p }"
+    >
+      <ListRow :to="`/vendor/project/${p.name}`">
+
+        <!-- Project -->
+        <ListCell>
+          <Avatar
+            :label="initials(p.project_name)"
+            size="md"
+          />
+
+          <div class="ml-3 min-w-0">
+            <div
+              class="truncate text-sm font-medium text-ink-gray-8"
+            >
+              {{ p.project_name }}
+            </div>
+
+            <div
+              class="mt-0.5 truncate text-xs text-ink-gray-5"
+            >
+              {{ p.client || 'No client' }}
+            </div>
+          </div>
+        </ListCell>
+
+        <!-- Status -->
+        <ListCell>
+          <Badge
+            :label="p.status"
+            :theme="statusColorMap[p.status] || 'gray'"
+            size="sm"
+          />
+        </ListCell>
+
+        <!-- Timeline -->
+        <ListCell class="max-sm:hidden">
+          <div class="flex items-center gap-2 text-sm text-ink-gray-6">
+            <Icon
+              name="lucide-calendar"
+              class="size-4 shrink-0 text-ink-gray-5"
+            />
+
+            <span class="whitespace-nowrap">
+              {{ p.start_date || '-' }}
+            </span>
+
+            <span class="text-ink-gray-4">
+              →
+            </span>
+
+            <span class="whitespace-nowrap">
+              {{ p.end_date || '-' }}
+            </span>
+          </div>
+        </ListCell>
+
+        <!-- Progress -->
+        <ListCell class="justify-end max-sm:hidden">
+          <div class="flex items-center gap-3">
+            <div class="w-20">
+              <Progress
+                :value="p.progress || 0"
+                size="sm"
+              />
+            </div>
+
+            <span
+              class="w-9 text-right text-sm tabular-nums text-ink-gray-6"
+            >
+              {{ p.progress || 0 }}%
+            </span>
+          </div>
+        </ListCell>
+
+      </ListRow>
+    </ListRows>
+  </List>
+</div>
+</div>
 </template>
 
 <script>
-import { Badge } from 'frappe-ui'
+import { Avatar, Badge, Icon, Progress, Skeleton } from 'frappe-ui'
+import { List, ListRow, ListCell, ListHeader, ListHeaderCell, ListRows } from 'frappe-ui/list'
+import 'frappe-ui/list-style.css'
 import { useVendorTasks, useVendorDeliverables, useVendorProjects } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
-import ProgressBar from '@/components/ProgressBar.vue'
 
 export default {
   name: 'VendorDashboard',
-  components: { Badge, ProgressBar },
+  components: { Avatar, Badge, Icon, Progress, Skeleton, List, ListRow, ListCell, ListHeader, ListHeaderCell, ListRows },
   data() {
     return {
       tasks: [],
       deliverables: [],
       vendorProjects: [],
       taskStatusFilter: 'All',
+      loading: true,
     }
   },
   computed: {
@@ -191,6 +347,15 @@ export default {
     this.loadData()
   },
   methods: {
+    initials(name) {
+      return (name || '?')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    },
     stripMarkdown(text) {
       if (!text) return ''
       return String(text)
@@ -199,6 +364,7 @@ export default {
         .trim()
     },
     async loadData() {
+      this.loading = true
       try {
         const [t, d, p] = await Promise.all([
           useVendorTasks().fetch(),
@@ -209,6 +375,7 @@ export default {
         this.deliverables = d || []
         this.vendorProjects = p || []
       } catch {}
+      this.loading = false
     },
   },
 }

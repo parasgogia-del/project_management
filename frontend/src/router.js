@@ -160,6 +160,12 @@ const routes = [
         meta: { roles: ['Project Manager', 'Vendor'] },
       },
       {
+        path: 'vendor/project/:id',
+        name: 'VendorProject',
+        component: () => import('@/pages/vendor/ProjectView.vue'),
+        meta: { roles: ['Project Manager', 'Vendor'] },
+      },
+      {
         path: 'vendor/task/:id',
         name: 'VendorTask',
         component: () => import('@/pages/vendor/TaskPage.vue'),

@@ -97,7 +97,7 @@ import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 const MEMBER_ACTIONS = {
-  'Draft': [],
+  'Draft': ['Start Work'],
   'WIP': ['Submit for Approval'],
   'Ready for Approval': [],
   'Awaiting Client Review': [],

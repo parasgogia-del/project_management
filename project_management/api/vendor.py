@@ -51,6 +51,67 @@ def get_vendor_projects(vendor_name=None):
 
 @frappe.whitelist()
 @require_roles("Project Manager", "Vendor")
+def get_vendor_project(name=None):
+    """Read-only project details for a vendor: safe fields only, plus the
+    project's deliverables and the tasks assigned to this vendor. Does not
+    expose other members/vendors/internal data."""
+    if not name:
+        frappe.throw("Project name is required")
+
+    vendor_name = _resolve_vendor_name()
+    if not vendor_name:
+        return None
+
+    if name not in _get_vendor_project_names(vendor_name):
+        frappe.throw("You are not associated with this project", frappe.PermissionError)
+
+    project = frappe.get_doc("Project Info", name)
+    data = {
+        "name": project.name,
+        "project_name": project.project_name,
+        "status": project.status,
+        "progress": project.progress,
+        "client": project.client,
+        "start_date": project.start_date,
+        "end_date": project.end_date,
+        "description": project.description,
+    }
+
+    data["deliverables"] = frappe.get_all(
+        "Deliverable",
+        filters={"project": name},
+        fields=[
+            "name",
+            "title",
+            "status",
+            "due_date",
+            "description",
+            "submitted_by",
+            "delivery_date",
+        ],
+        order_by="creation desc",
+    )
+
+    data["tasks"] = frappe.get_all(
+        "Project Task",
+        filters={"project": name, "assigned_vendor": vendor_name},
+        fields=[
+            "name",
+            "title",
+            "deliverable",
+            "status",
+            "priority",
+            "due_date",
+            "description",
+        ],
+        order_by="creation desc",
+    )
+
+    return data
+
+
+@frappe.whitelist()
+@require_roles("Project Manager", "Vendor")
 def get_vendor_deliverables(vendor_name=None):
     vendor_name = _resolve_vendor_name(vendor_name)
     if not vendor_name:

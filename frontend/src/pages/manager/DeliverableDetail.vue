@@ -123,7 +123,7 @@ import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 const WORKFLOW_ACTIONS = {
-  'Draft': [],
+  'Draft': ['Start Work'],
   'WIP': [],
   'Ready for Approval': ['Send for Approval'],
   'Awaiting Client Review': [],
