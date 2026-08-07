@@ -430,9 +430,19 @@ No secrets, tokens, or credentials are stored in the repository.
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/c7b8cf16-629c-4a3b-ae46-dd66176af9c7" />
 
-### Raven Integration
+### Raven Integration:-
 
-<img width="1857" height="1124" alt="Raven workspace and channels" src="docs/screenshots/raven-integration.png" />
+#### Internal
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/63239325-b69f-4b62-90c1-abeb30e85273" />
+
+#### External
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/f3673c5d-463a-4fc4-ad31-6f8b5beaf329" />
+
+#### Discussions
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/208e7299-f62c-4f90-a96a-dd6060cae45b" />
+
+#### Reminder Notification
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/5624add4-049d-461a-b0b1-688c44746eab" />
 
 ### Member Portal
 
