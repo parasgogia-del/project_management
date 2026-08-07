@@ -75,7 +75,8 @@ The frontend is a **same-origin SPA** served by Frappe. It makes `frappeRequest`
 - **Attachments** — upload/download files on projects, deliverables, and tasks
 - **Gantt chart** — visual timeline of task schedules for a project
 - **Reports** — daily/weekly progress reports per project
-- **Reminders** — Automated task reminders via Raven: DMs the assignee when a task is overdue or due soon, with per-project enable/disable and reminder-window settings.
+- **Reminders** — automated reminder alerts via a Raven bot, DMing the assignee when a task is overdue or due soon, with per-project enable/disable and reminder-window settings
+- **Raven workspace** — creating a project automatically creates a Raven workspace with three channels: internal, external, and discussion
 - **Member portal** — dashboard of my tasks, my projects, my deliverables, and today's focus
 - **Client portal** — dashboard of my projects and deliverables, plus review/approval actions
 - **Vendor portal** — dashboard of assigned tasks/deliverables and delivery submission
@@ -95,6 +96,8 @@ The application has four roles, enforced in the backend by Frappe permissions an
 - Create deliverables and tasks
 - Advance deliverables through the approval workflow (`Start Work`, `Send for Approval`)
 - Update task status, edit tasks, log time
+- Enable per-project automated reminder alerts (Raven bot) for off-track tasks
+- Auto-create the project's Raven workspace with internal, external, and discussion channels when creating a project
 - View Gantt charts and daily/weekly reports
 - Access every portal for visibility
 
@@ -242,7 +245,7 @@ flowchart LR
 The frontend consumes existing Frappe APIs and never re-implements business logic.
 
 - **Frontend responsibilities:** rendering, routing, role-based UI, form capture, client-side filtering, calling APIs, showing progress/errors.
-- **Backend responsibilities:** DocTypes (`Project Info`, `Deliverable`, `Project Task`, `Project Member`, `Project Vendors`, `Vendor`, `Deliverable Task`, `Time Log`), permissions, the deliverable workflow, data validation, and calculations (e.g. progress percentages).
+- **Backend responsibilities:** DocTypes (`Project Info`, `Deliverable`, `Project Task`, `Project Member`, `Project Vendors`, `Vendor`, `Deliverable Task`, `Time Log`), permissions, the deliverable workflow, data validation, and calculations (e.g. progress percentages). It also handles Raven integration — auto-creating a workspace with internal, external, and discussion channels per project, and sending reminder DMs to assignees via a Raven bot.
 
 The deliverables' workflow is executed on the backend through Frappe's `apply_workflow`; the frontend simply sends the chosen action name.
 
