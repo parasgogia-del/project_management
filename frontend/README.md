@@ -14,13 +14,8 @@ This repository contains the **frontend application** — a Vue 3 + Vite + Frapp
 - [Application Flow](#application-flow)
 - [Role-Based Application Flow](#role-based-application-flow)
 - [Frontend Architecture](#frontend-architecture)
-- [Project Structure](#project-structure)
-- [Pages / Screens](#pages--screens)
-- [Components](#components)
-- [API Integration](#api-integration)
 - [Backend Integration](#backend-integration)
 - [Workflow](#workflow)
-- [Project Progress Flow](#project-progress-flow)
 - [Task and Deliverable Relationship](#task-and-deliverable-relationship)
 - [Authentication](#authentication)
 - [Installation](#installation)
@@ -28,10 +23,8 @@ This repository contains the **frontend application** — a Vue 3 + Vite + Frapp
 - [Development Workflow](#development-workflow)
 - [Screenshots](#screenshots)
 - [Complete User Journey](#complete-user-journey)
-- [Feature-to-Page Mapping](#feature-to-page-mapping)
 - [Technologies Used](#technologies-used)
 - [Design System / UI](#design-system--ui)
-- [Responsive Design](#responsive-design)
 - [Error Handling / Loading States](#error-handling--loading-states)
 - [Future Improvements](#future-improvements)
 - [Contribution](#contribution)
@@ -146,23 +139,6 @@ flowchart TD
     G --> H[Comments / Attachments / Time Logs]
 ```
 
-In practice the flow is:
-
-```mermaid
-flowchart TD
-    A[User] --> B[Authentication]
-    B --> C[Dashboard]
-    C --> D[Projects]
-    D --> E[Project Details]
-    E --> F[Tasks]
-    E --> G[Deliverables]
-    F --> H[Task Details]
-    G --> I[Deliverable Details]
-    H --> J[Comments / Attachments / Time Logs]
-    I --> J
-    I --> K[Client Review / Approval]
-```
-
 ---
 
 ## Role-Based Application Flow
@@ -251,46 +227,6 @@ Every page fetches data through either a **resource** from `src/data/resources.j
 
 ---
 
-## Project Structure
-
-```text
-frontend/
-├── docs/
-│   └── screenshots/          # Screenshot images for the README
-├── public/                   # (dev) static public assets
-├── src/
-│   ├── components/
-│   │   ├── layout/           # App shell: AppLayout, Sidebar, Topbar
-│   │   ├── ActivityTimeline.vue
-│   │   ├── CommentSection.vue
-│   │   ├── EmptyState.vue
-│   │   ├── FileUpload.vue
-│   │   └── ProgressBar.vue
-│   ├── data/
-│   │   ├── resources.js      # frappe-ui resource factories (all API calls)
-│   │   ├── session.js        # session user, roles, portal routing helper
-│   │   └── store.js          # tiny reactive global store
-│   ├── pages/
-│   │   ├── client/           # Client portal screens
-│   │   ├── manager/          # Project Manager screens
-│   │   ├── member/           # Project Member portal screens
-│   │   ├── vendor/           # Vendor portal screens
-│   │   ├── Login.vue
-│   │   ├── Register.vue
-│   │   └── NoAccess.vue
-│   ├── utils/
-│   │   └── statusColors.js   # status -> badge colour mapping
-│   ├── App.vue               # Root component (router-view + ToastProvider)
-│   ├── index.css             # Tailwind/Frappe UI entry styles
-│   ├── main.js               # App bootstrap
-│   └── router.js             # Route table + auth/role guards
-├── index.html                # HTML shell + CSRF token bootstrap
-├── package.json
-├── postcss.config.js
-├── tailwind.config.js        # Extends frappe-ui/tailwind preset
-├── vite.config.mjs           # Vite + Frappe UI plugin config
-└── README.md
-```
 
 ## Backend Integration
 
@@ -442,9 +378,10 @@ No secrets, tokens, or credentials are stored in the repository.
 
 ## Screenshots
 
-### Login
+### Login/Logout
 
 <img width="1857" height="1093" alt="Screenshot from 2026-08-07 16-36-25" src="https://github.com/user-attachments/assets/bc742ac3-2e29-4a2f-85bd-329d6c03a3ac" />
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/7fd8750e-df79-49a4-8ac0-1902c9943b60" />
 
 ### Manager Dashboard
 
@@ -520,32 +457,6 @@ flowchart TD
 
 ---
 
-## Feature-to-Page Mapping
-
-| Feature                | Page                     | Component / API                       |
-| ---------------------- | ------------------------ | ------------------------------------- |
-| Projects list          | Projects (`/projects`)   | `ProjectList` / `get_projects`        |
-| Create/edit project    | Project form             | `ProjectForm` / `create_project`, `update_project` |
-| Project progress       | Project details          | `ProgressBar` / `get_project`         |
-| Deliverables           | Deliverable lists/detail | `DeliverableList`, `DeliverableDetail` |
-| Create deliverable     | Deliverable list modal   | `create_deliverable`                  |
-| Deliverable workflow   | Deliverable detail       | `update_deliverable_status`           |
-| Tasks                  | Task list/detail         | `TaskList`, `TaskDetail`              |
-| Create/edit task       | Task modals              | `create_task`, `update_task`          |
-| Task status            | Task detail              | `update_task_status`                  |
-| Time logging           | Task detail              | `Time Logs` panel / `create_time_log` |
-| Comments               | Project/deliverable/task | `CommentSection`                      |
-| Attachments            | Project/deliverable/task | `FileUpload` / `project_management.api.file.*` |
-| Gantt chart            | Gantt chart              | `GanttChart` / `get_gantt_tasks`      |
-| Reports                | Reports page             | `Reports` / `get_progress_report`     |
-| Notifications          | Topbar                   | `get_notifications`                   |
-| Member focus           | Member dashboard/task    | `toggle_today_focus`                  |
-| Client review          | Client deliverable       | `ClientDeliverableView`               |
-| Vendor delivery        | Vendor deliverable       | `submit_deliverable`                  |
-| Member invite          | Client project           | `invite_project_member`               |
-
----
-
 ## Technologies Used
 
 ```text
@@ -558,7 +469,6 @@ Tailwind CSS 3 (Frappe UI preset)
 PostCSS / Autoprefixer
 Frappe Framework (backend, via whitelisted APIs)
 ```
-
 ---
 
 ## Design System / UI
@@ -574,17 +484,6 @@ The UI follows the **Frappe UI design system**:
 - Card-based layouts (`bg-white rounded-xl border border-gray-200`) for dashboards and detail pages
 - Modals for create/edit forms and confirmations
 - Feather icons alongside Frappe UI's Lucide-style icons
-
----
-
-## Responsive Design
-
-The application is primarily a desktop workspace, but uses responsive Tailwind classes:
-
-- **Desktop** — full multi-column grids, sidebars, and wide list views
-- **Tablet / mobile** — responsive grids collapse (`grid-cols-1`, `md:grid-cols-*`, `lg:grid-cols-3`), and the sidebar is collapsible
-- The vendor dashboard hides secondary columns on small screens (`max-sm:hidden`) and overrides the list grid for mobile (`max-sm:[--list-columns:...]`)
-- Utility classes such as `sm:w-72`, `sm:w-auto`, `grid-cols-2 md:grid-cols-4` adapt forms and stat cards to smaller viewports
 
 ---
 
@@ -630,8 +529,5 @@ The application is primarily a desktop workspace, but uses responsive Tailwind c
 
 ## License
 
-The frontend repository itself does not yet declare a license. The parent `project_management` Frappe app includes an `MIT License` in `license.txt` at the app root.
-
-```text
-License information has not been specified yet.
+This project is licensed under the MIT License.
 ```
