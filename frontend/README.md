@@ -140,6 +140,7 @@ flowchart TD
     E --> F[Projects / Deliverables / Tasks]
     F --> G[Detail Pages]
     G --> H[Comments / Attachments / Time Logs]
+    G --> I[Raven bot DMs assignee for off-track tasks]
 ```
 
 ---
@@ -153,7 +154,9 @@ flowchart TD
     A[Login] --> B[Manager Dashboard /]
     B --> C[Projects /projects]
     C --> D[Create Project /project/new]
+    D --> D1[Raven workspace + internal/external/discussion channels]
     C --> E[Project Details /project/:id]
+    E --> E1[Enable reminder alerts per project]
     E --> F[Tasks /project/:id/tasks]
     E --> G[Deliverables /project/:id/deliverables]
     E --> H[Gantt Chart /project/:id/gantt]
@@ -240,6 +243,8 @@ flowchart LR
     C --> D[Frappe Backend]
     D --> E[DocTypes]
     D --> F[Database]
+    D --> G[Raven Workspace / Channels]
+    D --> H[Raven Bot Reminders]
 ```
 
 The frontend consumes existing Frappe APIs and never re-implements business logic.
@@ -425,6 +430,10 @@ No secrets, tokens, or credentials are stored in the repository.
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/c7b8cf16-629c-4a3b-ae46-dd66176af9c7" />
 
+### Raven Integration
+
+<img width="1857" height="1124" alt="Raven workspace and channels" src="docs/screenshots/raven-integration.png" />
+
 ### Member Portal
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/09d52294-9fe4-43fd-a7fe-436786fb4433" />
@@ -454,6 +463,7 @@ flowchart TD
     C -->|Project Member| G[Member Dashboard]
 
     D --> H[Projects]
+    H --> H1[Create Project - Raven workspace + channels]
     H --> I[Project Details]
     I --> J[Tasks]
     I --> K[Deliverables]
@@ -464,6 +474,7 @@ flowchart TD
     L --> N[Comments]
     L --> O[Time Logs]
     L --> P[Attachments]
+    L --> R[Assignee gets reminder DM via Raven bot]
 
     M --> N
     M --> P
