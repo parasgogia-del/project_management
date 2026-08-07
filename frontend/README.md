@@ -345,23 +345,6 @@ Tasks use a simple status model: `Open → Working → Blocked → Completed`. A
 
 ---
 
-## Project Progress Flow
-
-Progress is derived from completed tasks. The frontend displays it as a percentage via `ProgressBar` and computes deliverable progress locally (`completed tasks / total tasks`), while overall project progress is returned by the backend API.
-
-```mermaid
-flowchart TD
-    A[Project] --> B[Deliverables]
-    B --> C[Tasks]
-    C --> D[Task Status]
-    D --> E[Completed Tasks]
-    E --> F[Progress Calculation]
-    F --> G[Project / Deliverable Progress %]
-    G --> H[Progress Bar in UI]
-```
-
----
-
 ## Task and Deliverable Relationship
 
 A project contains deliverables, and each deliverable contains tasks. Tasks belong to exactly one deliverable (and therefore one project).
@@ -459,47 +442,50 @@ No secrets, tokens, or credentials are stored in the repository.
 
 ## Screenshots
 
-> Screenshots are placeholders — add your own images to `docs/screenshots/` and keep the filenames matching.
-
 ### Login
 
 <img width="1857" height="1093" alt="Screenshot from 2026-08-07 16-36-25" src="https://github.com/user-attachments/assets/bc742ac3-2e29-4a2f-85bd-329d6c03a3ac" />
 
 ### Manager Dashboard
 
-![Manager Dashboard](docs/screenshots/manager-dashboard.png)
+<img width="1857" height="1124" alt="Screenshot from 2026-08-07 16-45-54" src="https://github.com/user-attachments/assets/73d7c255-95c8-491e-a530-a681bef705d2" />
 
 ### Projects
 
-![Projects](docs/screenshots/projects.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/8e26f263-4f28-462c-b1b7-cf5e019e5f9f" />
+
 
 ### Project Details
 
-![Project Details](docs/screenshots/project-details.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/3c414989-503c-4886-8c10-120c8632d4a1" />
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/2c87b789-d6aa-44c0-bb8b-e669174ada8a" />
 
 ### Tasks
 
-![Tasks](docs/screenshots/tasks.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/671be355-00cf-49e1-b077-79c8ae5abd49" />
 
 ### Deliverables
 
-![Deliverables](docs/screenshots/deliverables.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/eca8a251-d2d2-4d39-928b-6365eddb923d" />
 
 ### Gantt Chart
 
-![Gantt Chart](docs/screenshots/gantt-chart.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/c7b8cf16-629c-4a3b-ae46-dd66176af9c7" />
 
 ### Member Portal
 
-![Member Portal](docs/screenshots/member-dashboard.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/09d52294-9fe4-43fd-a7fe-436786fb4433" />
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/c2e0cc5f-7855-492d-8e7b-3617b97b2e0a" />
 
 ### Client Portal
 
-![Client Portal](docs/screenshots/client-dashboard.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/82e39942-92fe-4668-9deb-da5b1a97a178" />
 
 ### Vendor Portal
 
-![Vendor Portal](docs/screenshots/vendor-dashboard.png)
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/893510e8-388a-454c-9ff2-a82a307f0bb9" />
 
 ---
 
