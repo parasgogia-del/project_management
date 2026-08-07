@@ -99,6 +99,41 @@ def create_deliverable(data=None):
     return doc.as_dict()
 
 
+@frappe.whitelist()
+@require_roles("Project Manager")
+def update_deliverable(name=None, data=None):
+    if not name:
+        frappe.throw("Deliverable name is required")
+    if not data:
+        frappe.throw("Data is required")
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+
+    allowed_fields = ["title", "project", "description", "due_date", "status"]
+    filtered = {k: v for k, v in data.items() if k in allowed_fields}
+
+    doc = frappe.get_doc("Deliverable", name)
+
+    # Title is the naming field, so changing it means renaming the document.
+    new_title = filtered.get("title")
+    if new_title and new_title != doc.title:
+        if frappe.db.exists("Deliverable", new_title):
+            frappe.throw("A deliverable with this title already exists")
+        from frappe.model.rename_doc import rename_doc
+        rename_doc("Deliverable", doc.name, new_title, ignore_permissions=True)
+        doc = frappe.get_doc("Deliverable", new_title)
+
+    for field, value in filtered.items():
+        if field == "title":
+            continue
+        doc.set(field, value)
+    doc.flags.ignore_permissions = True
+    doc.save()
+    frappe.db.commit()
+    return frappe.get_doc("Deliverable", doc.name).as_dict()
+
+
 def _get_vendor_for_user(user):
     names = frappe.get_all("Vendor", filters={"user": user}, pluck="name")
     return names[0] if names else None

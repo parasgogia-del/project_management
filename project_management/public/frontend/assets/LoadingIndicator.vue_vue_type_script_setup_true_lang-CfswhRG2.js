@@ -1,0 +1,1 @@
+import{i as o,o as t,l as c,H as l,aX as n,p as r}from"./index-BLwdFlnu.js";const u=o({__name:"LoadingIndicator",props:{scale:{default:100}},setup(a){const e=a,s=r(()=>e.scale===100?void 0:{scale:`${e.scale}%`});return(p,i)=>(t(),c(n,{style:l(s.value)},null,8,["style"]))}});export{u as _};

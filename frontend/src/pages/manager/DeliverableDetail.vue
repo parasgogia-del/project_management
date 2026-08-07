@@ -11,6 +11,7 @@
           Project: {{ deliverable.project }}
         </p>
       </div>
+      <Button v-if="deliverable" variant="outline" @click="openEditModal">Edit Deliverable</Button>
     </div>
 
     <LoadingIndicator v-if="loading" class="mx-auto my-16 h-8 w-8 text-gray-400" />
@@ -112,11 +113,30 @@
         </div>
       </div>
     </template>
+    <Dialog v-model="showEditModal" :options="{ title: 'Edit Deliverable', size: 'lg' }">
+      <template #body-content>
+        <div class="space-y-4">
+          <Input v-model="editForm.title" label="Title *" placeholder="Deliverable title" />
+          <Input type="date" v-model="editForm.due_date" label="Due Date" />
+          <Input v-model="editForm.description" type="textarea" :rows="3" label="Description" />
+        </div>
+      </template>
+      <template #actions="{ close }">
+        <Button variant="outline" @click="close">Cancel</Button>
+        <Button
+          theme="blue" variant="solid"
+          :disabled="!editForm.title"
+          :loading="savingDeliverable"
+          :loading-text="savingDeliverable ? 'Saving...' : null"
+          @click="saveDeliverable"
+        >Save Changes</Button>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script>
-import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator } from 'frappe-ui'
+import { FeatherIcon, frappeRequest, Button, Badge, LoadingIndicator, Dialog, Input } from 'frappe-ui'
 import { useDeliverable, useTasks } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
 import FileUpload from '@/components/FileUpload.vue'
@@ -133,7 +153,7 @@ const WORKFLOW_ACTIONS = {
 
 export default {
   name: 'DeliverableDetail',
-  components: { FeatherIcon, Button, Badge, LoadingIndicator, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, LoadingIndicator, Dialog, Input, FileUpload, CommentSection },
   data() {
     return {
       deliverable: null,
@@ -142,6 +162,13 @@ export default {
       updating: false,
       updateError: '',
       canManage: true,
+      showEditModal: false,
+      savingDeliverable: false,
+      editForm: {
+        title: '',
+        due_date: '',
+        description: '',
+      },
     }
   },
   computed: {
@@ -198,6 +225,30 @@ export default {
         this.updateError = err.message || 'Failed to update status'
       } finally {
         this.updating = false
+      }
+    },
+    openEditModal() {
+      this.editForm = {
+        title: this.deliverable.title || '',
+        due_date: this.deliverable.due_date || '',
+        description: this.deliverable.description || '',
+      }
+      this.showEditModal = true
+    },
+    async saveDeliverable() {
+      this.savingDeliverable = true
+      try {
+        await frappeRequest({
+          url: 'project_management.api.client.update_deliverable',
+          method: 'POST',
+          params: { name: this.deliverableId, data: this.editForm },
+        })
+        this.showEditModal = false
+        await this.loadAll()
+      } catch (err) {
+        console.error('Failed to update deliverable', err)
+      } finally {
+        this.savingDeliverable = false
       }
     },
   },
