@@ -182,14 +182,12 @@ export default {
       if (!date) return ''
       return new Date(date).toLocaleString()
     },
-    async toggleNotifications() {
+    toggleNotifications() {
       this.showNotifications = !this.showNotifications
       if (this.showNotifications && this.unreadCount > 0) {
-        try {
-          await frappeRequest({ url: 'frappe.desk.doctype.notification_log.notification_log.mark_all_as_read', method: 'POST' })
-          this.notifications.forEach(n => { n.read = 1 })
-          this.unreadCount = 0
-        } catch {}
+        this.notifications.forEach(n => { n.read = 1 })
+        this.unreadCount = 0
+        frappeRequest({ url: 'frappe.desk.doctype.notification_log.notification_log.mark_all_as_read', method: 'POST' }).catch(() => {})
       }
     },
     async logout() {

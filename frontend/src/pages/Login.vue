@@ -22,6 +22,8 @@
           >Sign In</Button>
         </div>
 
+        <p v-if="error" class="text-xs text-red-500 text-center mt-3">{{ error }}</p>
+
         <div class="mt-4 text-center space-y-2">
           <div>
             <a class="text-xs text-blue-600 hover:underline" :href="`/login#forgot`">Forgot password?</a>
@@ -62,10 +64,16 @@ export default {
         })
         window.location.reload()
       } catch (err) {
-        // no-op
+        this.error = this.extractError(err)
       } finally {
         this.loading = false
       }
+    },
+    extractError(err) {
+      if (err?.messages) return err.messages.join(', ')
+      if (err?.message) return err.message
+      if (err?._server_messages) return err._server_messages.join(', ')
+      return 'Invalid email or password'
     },
   },
 }
