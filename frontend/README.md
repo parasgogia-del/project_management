@@ -151,7 +151,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Login] --> B[Manager Dashboard /]
+    A[Login] --> B[Manager Dashboard]
     B --> C[Projects /projects]
     C --> D[Create Project /project/new]
     D --> D1[Raven workspace + internal/external/discussion channels]
@@ -229,8 +229,7 @@ flowchart TD
 | Frappe whitelisted APIs  | Backend endpoints in `project_management.api.*`                        |
 | Frappe backend           | DocTypes, workflows, permissions, and business logic                   |
 
-Every page fetches data through either a **resource** from `src/data/resources.js` (e.g. `useProject`, `useTasks`) or a direct `frappeRequest` call. No page calls the Frappe API by URL string everywhere — all endpoints are centralized in the data layer and page scripts.
-
+Every page fetches data through either a **resource** from `src/data/resources.js` (e.g. `useProject`, `useTasks`) or a direct `frappeRequest` call. No page hardcodes API URLs; endpoints are centralized in the data layer (src/data/).
 ---
 
 
