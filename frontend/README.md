@@ -381,6 +381,7 @@ No secrets, tokens, or credentials are stored in the repository.
 ### Login/Logout
 
 <img width="1857" height="1093" alt="Screenshot from 2026-08-07 16-36-25" src="https://github.com/user-attachments/assets/bc742ac3-2e29-4a2f-85bd-329d6c03a3ac" />
+
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/7fd8750e-df79-49a4-8ac0-1902c9943b60" />
 
 ### Manager Dashboard
@@ -390,7 +391,6 @@ No secrets, tokens, or credentials are stored in the repository.
 ### Projects
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/8e26f263-4f28-462c-b1b7-cf5e019e5f9f" />
-
 
 ### Project Details
 
@@ -402,9 +402,21 @@ No secrets, tokens, or credentials are stored in the repository.
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/671be355-00cf-49e1-b077-79c8ae5abd49" />
 
+### Tasks Details
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/bcf99934-8c60-4e3f-91f0-ac618cb9d842" />
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/2e2a5e0f-153b-432c-8182-7fff776bfaa5" />
+
 ### Deliverables
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/eca8a251-d2d2-4d39-928b-6365eddb923d" />
+
+### Deliverables Details
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/d56f75f3-9ef3-471b-bee5-cc154fb93374" />
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/5c2900e4-581e-4840-b26e-9ee68baa3c72" />
 
 ### Gantt Chart
 
