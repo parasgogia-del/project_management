@@ -14,7 +14,7 @@
     <div class="flex items-center gap-4">
       <div class="relative" data-notifications>
         <button
-          @click="showNotifications = !showNotifications"
+          @click="toggleNotifications"
           class="relative p-2 rounded-lg hover:bg-surface-gray-2 text-ink-gray-5 transition-colors"
         >
           <feather-icon name="bell" class="w-5 h-5" />
@@ -43,8 +43,9 @@
             :key="n.name"
             class="px-3 py-2 border-b border-outline-gray-1 hover:bg-surface-gray-2 cursor-pointer"
           >
+            <p class="text-xs text-ink-gray-6">{{ n.from_user }}</p>
             <p class="text-xs text-ink-gray-7" v-html="n.subject || n.message || 'Notification'" />
-            <p class="text-[10px] text-ink-gray-4 mt-0.5">{{ n.creation }}</p>
+            <p class="text-[10px] text-ink-gray-4 mt-0.5">{{ formatNotificationDate(n.creation) }}</p>
           </div>
         </div>
       </div>
@@ -165,15 +166,31 @@ export default {
   mounted() {
     this.loadNotifications()
     this.profileResource.fetch()
+    this.pollTimer = setInterval(this.loadNotifications, 30000)
     document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {
+    clearInterval(this.pollTimer)
     document.removeEventListener('click', this.handleClickOutside)
   },
   methods: {
     formatDate(date) {
       if (!date) return ''
       return new Date(date).toLocaleDateString()
+    },
+    formatNotificationDate(date) {
+      if (!date) return ''
+      return new Date(date).toLocaleString()
+    },
+    async toggleNotifications() {
+      this.showNotifications = !this.showNotifications
+      if (this.showNotifications && this.unreadCount > 0) {
+        try {
+          await frappeRequest({ url: 'frappe.desk.doctype.notification_log.notification_log.mark_all_as_read', method: 'POST' })
+          this.notifications.forEach(n => { n.read = 1 })
+          this.unreadCount = 0
+        } catch {}
+      }
     },
     async logout() {
       if (!window.confirm('Are you sure you want to logout?')) return
@@ -186,7 +203,7 @@ export default {
       try {
         await this.notificationsResource.fetch()
         this.notifications = this.notificationsResource.data || []
-        this.unreadCount = this.notifications.length
+        this.unreadCount = this.notifications.filter(n => !n.read).length
       } catch {
         this.notifications = []
       }

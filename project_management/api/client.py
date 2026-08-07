@@ -159,7 +159,21 @@ def get_form_options():
         "project_managers": _get_role_users("Project Manager"),
         "members": _get_role_users("Project Member"),
         "vendors": [{"label": v.vendor_name or v.name, "value": v.name} for v in vendors],
+        "all_users": _get_all_users(),
     }
+
+
+def _get_all_users():
+    """All enabled users (except Administrator) formatted as autocomplete options."""
+    users = frappe.get_all("User", filters={"enabled": 1}, fields=["name", "full_name"], order_by="full_name asc")
+    options = []
+    for u in users:
+        if u.name == "Administrator":
+            continue
+        full_name = u.full_name or ""
+        label = f"{full_name} ({u.name})" if full_name and full_name != u.name else u.name
+        options.append({"label": label, "value": u.name})
+    return options
 
 
 def _get_user_project_names(user):
@@ -324,8 +338,29 @@ def invite_project_member(project=None, email=None, role="Client Reviewer", note
         "notes": notes,
     })
     doc.insert(ignore_permissions=True)
+
+    project_doc = frappe.get_doc("Project Info", project)
+    client_name = frappe.utils.get_fullname(frappe.session.user)
+    subject = f"{client_name} invited you to project '{project_doc.project_name}'"
+    email_content = f"You have been invited to the project <b>{project_doc.project_name}</b>."
+    if notes:
+        email_content += f"<br><br><b>Notes:</b> {notes}"
+    frappe.get_doc({
+        "doctype": "Notification Log",
+        "for_user": user,
+        "from_user": frappe.session.user,
+        "type": "Share",
+        "subject": subject,
+        "email_content": email_content,
+        "document_type": "Project Info",
+        "document_name": project,
+    }).insert(ignore_permissions=True)
+    try:
+        frappe.publish_realtime("notification", user=user)
+    except Exception:
+        pass
     frappe.db.commit()
-    return frappe.get_doc("Project Info", project).as_dict()
+    return project_doc.as_dict()
 
 
 @frappe.whitelist()
@@ -876,11 +911,20 @@ def delete_comment(name=None):
 
 @frappe.whitelist()
 def get_notifications():
-    try:
-        from frappe.core.doctype.notification_log.notification_log import get_notifications
-        return get_notifications()
-    except Exception:
+    """Notification Logs for the current user (latest first)."""
+    if frappe.session.user == "Guest":
         return []
+    logs = frappe.get_all(
+        "Notification Log",
+        filters={"for_user": frappe.session.user},
+        fields=["name", "subject", "email_content", "from_user", "read", "creation", "document_type", "document_name"],
+        order_by="creation desc",
+        limit=50,
+    )
+    for log in logs:
+        log["message"] = log.pop("email_content") or ""
+        log["from_user"] = frappe.utils.get_fullname(log["from_user"])
+    return logs
 
 
 @frappe.whitelist()

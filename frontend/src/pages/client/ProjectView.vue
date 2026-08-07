@@ -93,7 +93,13 @@
   <Dialog v-model="showInviteModal" :options="{ title: 'Invite Member', size: 'sm' }">
     <template #body-content>
       <div class="space-y-4">
-        <Input v-model="inviteForm.email" type="email" label="Email *" placeholder="user@example.com" />
+        <Autocomplete
+          :model-value="inviteForm.email"
+          :options="inviteOptions"
+          label="Email *"
+          placeholder="Search or select a user"
+          @change="inviteForm.email = $event?.value || ''"
+        />
         <Input v-model="inviteForm.notes" type="textarea" :rows="2" label="Notes (optional)" />
         <p v-if="inviteError" class="text-xs text-red-500">{{ inviteError }}</p>
       </div>
@@ -112,7 +118,7 @@
 </template>
 
 <script>
-import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator, Dialog, Input } from 'frappe-ui'
+import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, Autocomplete, toast } from 'frappe-ui'
 import { useProject, useDeliverables, useTasks } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
@@ -121,19 +127,26 @@ import CommentSection from '@/components/CommentSection.vue'
 
 export default {
   name: 'ClientProjectView',
-  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, ProgressBar, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, Autocomplete, ProgressBar, FileUpload, CommentSection },
   data() {
     return {
       project: null, deliverables: [], tasks: [], loading: true,
       showInviteModal: false, inviting: false, inviteError: '',
       inviteForm: { email: '', notes: '' },
+      inviteOptions: [],
     }
   },
   computed: {
     projectId() { return this.$route.params.id },
   },
-  mounted() { this.loadAll() },
+  mounted() { this.loadAll(); this.loadInviteOptions() },
   methods: {
+    async loadInviteOptions() {
+      try {
+        const res = await frappeRequest({ url: 'project_management.api.client.get_form_options', method: 'POST' })
+        this.inviteOptions = res?.members || []
+      } catch {}
+    },
     async loadAll() {
       this.loading = true
       try {
@@ -157,8 +170,10 @@ export default {
         })
         this.showInviteModal = false
         this.inviteForm = { email: '', notes: '' }
+        toast({ title: 'Success', text: 'Invitation sent successfully', icon: 'check-circle', iconClasses: 'text-green-600' })
       } catch (err) {
         this.inviteError = err.message || 'Failed to invite member'
+        toast({ title: 'Error', text: err.message || 'Failed to invite member', icon: 'alert-circle', iconClasses: 'text-red-600' })
       } finally { this.inviting = false }
     },
   },
