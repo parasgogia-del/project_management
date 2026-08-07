@@ -463,7 +463,7 @@ No secrets, tokens, or credentials are stored in the repository.
 
 ### Login
 
-![Login](docs/screenshots/login.png)
+<img width="1857" height="1093" alt="Screenshot from 2026-08-07 16-36-25" src="https://github.com/user-attachments/assets/bc742ac3-2e29-4a2f-85bd-329d6c03a3ac" />
 
 ### Manager Dashboard
 
