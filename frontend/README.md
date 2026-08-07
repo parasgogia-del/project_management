@@ -414,9 +414,9 @@ No secrets, tokens, or credentials are stored in the repository.
 
 ### Deliverables Details
 
-<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/d56f75f3-9ef3-471b-bee5-cc154fb93374" />
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/e5d42f53-2d6d-4546-bfa6-62f5949ed7f5" />
 
-<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/5c2900e4-581e-4840-b26e-9ee68baa3c72" />
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/2aa300f0-88a4-48ea-9a7d-02da3beaa372" />
 
 ### Gantt Chart
 
