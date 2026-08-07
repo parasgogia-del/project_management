@@ -128,6 +128,37 @@
             </div>
           </div>
 
+          <!-- Automated Reminders -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-800 mb-1">Automated Reminders</h2>
+            <p class="text-xs text-gray-500 mb-3">Send a Raven DM to the assignee when a task is not on track.</p>
+            <Input
+              type="checkbox"
+              v-model="reminderSettings.enable_task_reminders"
+              label="Enable automated reminders"
+            />
+            <div v-if="reminderSettings.enable_task_reminders" class="mt-4 space-y-3">
+              <Input
+                v-model.number="reminderSettings.reminder_days_before_due"
+                type="number"
+                label="Remind days before due"
+                placeholder="e.g. 3"
+              />
+              <Input
+                v-model.number="reminderSettings.reminder_days_after_overdue"
+                type="number"
+                label="Re-nudge overdue every (days)"
+                placeholder="e.g. 1"
+              />
+              <Button
+                theme="blue" variant="solid"
+                :loading="savingReminders"
+                :loading-text="savingReminders ? 'Saving...' : null"
+                @click="saveReminderSettings"
+              >Save Reminder Settings</Button>
+            </div>
+          </div>
+
           <!-- Members -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h2 class="text-sm font-semibold text-gray-800 mb-3">Members</h2>
@@ -203,7 +234,7 @@
 </template>
 
 <script>
-import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator, Dialog, toast } from 'frappe-ui'
+import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, toast } from 'frappe-ui'
 import { useProject, useTasks, useDeliverablesWithDetails } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
@@ -212,7 +243,7 @@ import CommentSection from '@/components/CommentSection.vue'
 
 export default {
   name: 'ProjectDetail',
-  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, ProgressBar, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, ProgressBar, FileUpload, CommentSection },
   data() {
     return {
       project: null,
@@ -221,6 +252,12 @@ export default {
       loading: true,
       showDeleteConfirm: false,
       deleting: false,
+      savingReminders: false,
+      reminderSettings: {
+        enable_task_reminders: false,
+        reminder_days_before_due: 3,
+        reminder_days_after_overdue: 1,
+      },
     }
   },
   computed: {
@@ -252,10 +289,33 @@ export default {
         this.project = projectRes
         this.tasks = tasksRes || []
         this.deliverables = deliverablesRes || []
+        this.reminderSettings = {
+          enable_task_reminders: !!projectRes?.enable_task_reminders,
+          reminder_days_before_due: projectRes?.reminder_days_before_due ?? 3,
+          reminder_days_after_overdue: projectRes?.reminder_days_after_overdue ?? 1,
+        }
       } catch (err) {
         console.error('Failed to load project', err)
       } finally {
         this.loading = false
+      }
+    },
+    async saveReminderSettings() {
+      this.savingReminders = true
+      try {
+        await frappeRequest({
+          url: 'project_management.api.client.update_project',
+          method: 'POST',
+          params: {
+            name: this.projectId,
+            data: this.reminderSettings,
+          },
+        })
+        toast({ title: 'Success', text: 'Reminder settings saved', icon: 'check-circle', iconClasses: 'text-green-600' })
+      } catch (err) {
+        toast({ title: 'Error', text: err.message || 'Failed to save reminder settings', icon: 'alert-circle', iconClasses: 'text-red-600' })
+      } finally {
+        this.savingReminders = false
       }
     },
     async deleteProject() {

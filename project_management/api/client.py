@@ -245,7 +245,7 @@ def update_project(name=None, data=None):
         import json
         data = json.loads(data)
 
-    allowed_fields = ["project_name", "client", "project_manager", "status", "start_date", "end_date", "description"]
+    allowed_fields = ["project_name", "client", "project_manager", "status", "start_date", "end_date", "description", "enable_task_reminders", "reminder_days_before_due", "reminder_days_after_overdue"]
 
     doc = frappe.get_doc("Project Info", name)
     for field, value in data.items():

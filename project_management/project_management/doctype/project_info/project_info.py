@@ -11,6 +11,10 @@ class ProjectInfo(Document):
         workspace = self.create_raven_workspace()
 
         if workspace:
+            # Add Project users to the Raven Workspace
+            self.sync_workspace_members()
+
+            # Create project channels and add channel-specific members
             self.create_internal_channel(workspace)
             self.create_external_channel(workspace)
             self.create_discussion_channel(workspace)
@@ -22,6 +26,10 @@ class ProjectInfo(Document):
         if not self.raven_workspace:
             return
 
+        # Sync workspace-level membership
+        self.sync_workspace_members()
+
+        # Sync channel-level membership
         self.sync_internal_channel()
         self.sync_external_channel()
         self.sync_discussion_channel()
@@ -40,16 +48,36 @@ class ProjectInfo(Document):
 
         channels = frappe.get_all(
             "Raven Channel",
-            filters={"linked_doctype": "Project Info", "linked_document": self.name},
-            pluck="name",
+            filters={
+                "linked_doctype": "Project Info",
+                "linked_document": self.name
+            },
+            pluck="name"
         )
 
         for channel in channels:
-            frappe.delete_doc("Raven Channel", channel, ignore_permissions=True)
+            frappe.delete_doc(
+                "Raven Channel",
+                channel,
+                ignore_permissions=True
+            )
 
-        if self.raven_workspace and frappe.db.exists("Raven Workspace", self.raven_workspace):
-            frappe.db.set_value("Project Info", self.name, "raven_workspace", None)
-            frappe.delete_doc("Raven Workspace", self.raven_workspace, ignore_permissions=True)
+        if (
+            self.raven_workspace
+            and frappe.db.exists("Raven Workspace", self.raven_workspace)
+        ):
+            frappe.db.set_value(
+                "Project Info",
+                self.name,
+                "raven_workspace",
+                None
+            )
+
+            frappe.delete_doc(
+                "Raven Workspace",
+                self.raven_workspace,
+                ignore_permissions=True
+            )
 
     def _delete_linked_project_docs(self):
         for doctype, fieldname in [
@@ -57,8 +85,16 @@ class ProjectInfo(Document):
             ("Project Task", "project"),
             ("Deliverable", "project"),
         ]:
-            for name in frappe.get_all(doctype, filters={fieldname: self.name}, pluck="name"):
-                frappe.delete_doc(doctype, name, ignore_permissions=True)
+            for name in frappe.get_all(
+                doctype,
+                filters={fieldname: self.name},
+                pluck="name"
+            ):
+                frappe.delete_doc(
+                    doctype,
+                    name,
+                    ignore_permissions=True
+                )
 
     # ----------------------------------------------------
     # Workspace
@@ -75,7 +111,10 @@ class ProjectInfo(Document):
 
             workspace.insert()
 
-            self.db_set("raven_workspace", workspace.name)
+            self.db_set(
+                "raven_workspace",
+                workspace.name
+            )
 
             return workspace
 
@@ -84,7 +123,145 @@ class ProjectInfo(Document):
                 frappe.get_traceback(),
                 f"Failed to create Raven Workspace for {self.name}"
             )
+
             return None
+
+    # ----------------------------------------------------
+    # Workspace Members
+    # ----------------------------------------------------
+
+    def get_workspace_members(self):
+        """
+        Return all users who should have access
+        to this project's Raven workspace.
+        """
+
+        members = set()
+
+        # Project Manager
+        if self.project_manager:
+            members.add(self.project_manager)
+
+        # Project Members
+        for row in self.project_members:
+            if row.user and row.is_active:
+                members.add(row.user)
+
+        # Client
+        if self.client:
+            members.add(self.client)
+
+        # Vendors
+        for row in self.vendors:
+            if row.vendor:
+                vendor = frappe.get_doc(
+                    "Vendor",
+                    row.vendor
+                )
+
+                if vendor.user:
+                    members.add(vendor.user)
+
+        return members
+
+    def sync_workspace_members(self):
+        """
+        Keep Raven Workspace Members synchronized
+        with the users associated with this project.
+        """
+
+        if not self.raven_workspace:
+            return
+
+        if not frappe.db.exists(
+            "Raven Workspace",
+            self.raven_workspace
+        ):
+            return
+
+        desired_members = self.get_workspace_members()
+
+        workspace = frappe.get_doc(
+            "Raven Workspace",
+            self.raven_workspace
+        )
+
+        # ------------------------------------------------
+        # Workspace owner must always remain a member
+        # ------------------------------------------------
+
+        if workspace.owner:
+            desired_members.add(workspace.owner)
+
+        # ------------------------------------------------
+        # Only users who exist as Raven Users can be
+        # added to Raven Workspace Member.
+        # ------------------------------------------------
+
+        raven_members = set()
+
+        for user in desired_members:
+            if frappe.db.exists(
+                "Raven User",
+                {"user": user}
+            ):
+                raven_members.add(user)
+
+        # ------------------------------------------------
+        # Get current workspace members
+        # ------------------------------------------------
+
+        current_members = frappe.get_all(
+            "Raven Workspace Member",
+            filters={
+                "workspace": self.raven_workspace
+            },
+            fields=[
+                "name",
+                "user",
+                "is_admin"
+            ]
+        )
+
+        current_users = {
+            member.user
+            for member in current_members
+        }
+
+        # ------------------------------------------------
+        # Add missing workspace members
+        # ------------------------------------------------
+
+        for user in raven_members:
+            if user not in current_users:
+                member = frappe.get_doc({
+                    "doctype": "Raven Workspace Member",
+                    "workspace": self.raven_workspace,
+                    "user": user,
+                    "is_admin": 0
+                })
+
+                member.insert(
+                    ignore_permissions=True
+                )
+
+        # ------------------------------------------------
+        # Remove old workspace members
+        # ------------------------------------------------
+
+        for member in current_members:
+
+            # Never remove workspace owner
+            if member.user == workspace.owner:
+                continue
+
+            if member.user not in raven_members:
+
+                frappe.delete_doc(
+                    "Raven Workspace Member",
+                    member.name,
+                    ignore_permissions=True
+                )
 
     # ----------------------------------------------------
     # Channels
@@ -96,7 +273,9 @@ class ProjectInfo(Document):
             channel = frappe.get_doc({
                 "doctype": "Raven Channel",
                 "channel_name": "internal",
-                "channel_description": f"Internal discussion for {self.project_name}",
+                "channel_description": (
+                    f"Internal discussion for {self.project_name}"
+                ),
                 "workspace": workspace.name,
                 "type": "Private",
                 "linked_doctype": "Project Info",
@@ -108,7 +287,6 @@ class ProjectInfo(Document):
             self.add_internal_members(channel)
 
         except Exception:
-
             frappe.log_error(
                 frappe.get_traceback(),
                 f"Failed to create Internal Channel for {self.name}"
@@ -117,11 +295,12 @@ class ProjectInfo(Document):
     def create_external_channel(self, workspace):
 
         try:
-
             channel = frappe.get_doc({
                 "doctype": "Raven Channel",
                 "channel_name": "external",
-                "channel_description": f"External discussion for {self.project_name}",
+                "channel_description": (
+                    f"External discussion for {self.project_name}"
+                ),
                 "workspace": workspace.name,
                 "type": "Private",
                 "linked_doctype": "Project Info",
@@ -133,31 +312,31 @@ class ProjectInfo(Document):
             self.add_external_members(channel)
 
         except Exception:
-
             frappe.log_error(
                 frappe.get_traceback(),
                 f"Failed to create External Channel for {self.name}"
             )
 
     def create_discussion_channel(self, workspace):
-        try:
 
+        try:
             channel = frappe.get_doc({
-            "doctype": "Raven Channel",
-            "channel_name": "discussion",
-            "channel_description": f"Discussion for {self.project_name}",
-            "workspace": workspace.name,
-            "type": "Private",
-            "linked_doctype": "Project Info",
-            "linked_document": self.name,
-        })
+                "doctype": "Raven Channel",
+                "channel_name": "discussion",
+                "channel_description": (
+                    f"Discussion for {self.project_name}"
+                ),
+                "workspace": workspace.name,
+                "type": "Private",
+                "linked_doctype": "Project Info",
+                "linked_document": self.name,
+            })
 
             channel.insert()
 
             self.add_discussion_members(channel)
 
         except Exception:
-
             frappe.log_error(
                 frappe.get_traceback(),
                 f"Failed to create Discussion Channel for {self.name}"
@@ -171,11 +350,12 @@ class ProjectInfo(Document):
 
         members = []
 
+        # Project Manager
         if self.project_manager:
             members.append(self.project_manager)
 
+        # Project Members
         for row in self.project_members:
-
             if row.user and row.is_active:
                 members.append(row.user)
 
@@ -192,11 +372,14 @@ class ProjectInfo(Document):
             if row.user and row.is_active:
                 members.append(row.user)
 
+        # Vendors
         for row in self.vendors:
-
             if row.vendor:
 
-                vendor = frappe.get_doc("Vendor", row.vendor)
+                vendor = frappe.get_doc(
+                    "Vendor",
+                    row.vendor
+                )
 
                 if vendor.user:
                     members.append(vendor.user)
@@ -204,7 +387,6 @@ class ProjectInfo(Document):
         members = list(set(members))
 
         channel.add_members(members)
-
 
     def add_discussion_members(self, channel):
 
@@ -226,7 +408,11 @@ class ProjectInfo(Document):
     # ----------------------------------------------------
 
     def _find_channel(self, channel_name):
-        """Find a channel in this project's Raven workspace by its plain name."""
+        """
+        Find a channel in this project's Raven workspace
+        by its plain name.
+        """
+
         if not self.raven_workspace:
             return None
 
@@ -243,7 +429,10 @@ class ProjectInfo(Document):
         if not names:
             return None
 
-        return frappe.get_doc("Raven Channel", names[0])
+        return frappe.get_doc(
+            "Raven Channel",
+            names[0]
+        )
 
     def sync_channel_members(self, channel, desired_members):
 
@@ -254,17 +443,24 @@ class ProjectInfo(Document):
             filters={
                 "channel_id": channel.name
             },
-            fields=["name", "user_id"]
+            fields=[
+                "name",
+                "user_id"
+            ]
         )
 
-        current_users = [m.user_id for m in current_members]
+        current_users = [
+            member.user_id
+            for member in current_members
+        ]
 
         # -----------------------
         # Add Missing Members
         # -----------------------
 
         new_members = [
-            user for user in desired_members
+            user
+            for user in desired_members
             if user not in current_users
         ]
 
@@ -302,11 +498,12 @@ class ProjectInfo(Document):
 
         members = []
 
+        # Project Manager
         if self.project_manager:
             members.append(self.project_manager)
 
+        # Project Members
         for row in self.project_members:
-
             if row.user and row.is_active:
                 members.append(row.user)
 
@@ -333,9 +530,8 @@ class ProjectInfo(Document):
             if row.user and row.is_active:
                 members.append(row.user)
 
-
+        # Vendors
         for row in self.vendors:
-
             if row.vendor:
 
                 vendor = frappe.get_doc(
@@ -350,6 +546,10 @@ class ProjectInfo(Document):
             channel,
             members
         )
+
+    # ----------------------------------------------------
+    # Discussion Sync
+    # ----------------------------------------------------
 
     def sync_discussion_channel(self):
 
@@ -369,4 +569,7 @@ class ProjectInfo(Document):
         if self.client:
             members.add(self.client)
 
-        self.sync_channel_members(channel, list(members))
+        self.sync_channel_members(
+            channel,
+            list(members)
+        )

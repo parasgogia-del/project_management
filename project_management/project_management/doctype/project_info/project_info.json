@@ -16,11 +16,15 @@
   "end_date",
   "progress",
   "raven_workspace",
-  "column_break_cvwv",
-  "vendors",
-  "project_members",
-  "description"
- ],
+"column_break_cvwv",
+   "vendors",
+   "project_members",
+   "description",
+   "task_reminders_section",
+   "enable_task_reminders",
+   "reminder_days_before_due",
+   "reminder_days_after_overdue"
+  ],
  "fields": [
   {
    "fieldname": "project_information_section",
@@ -92,12 +96,37 @@
    "fieldname": "column_break_cvwv",
    "fieldtype": "Column Break"
   },
-  {
-   "fieldname": "raven_workspace",
-   "fieldtype": "Link",
-   "label": "Raven Workspace",
-   "options": "Raven Workspace"
-  }
+{
+    "fieldname": "raven_workspace",
+    "fieldtype": "Link",
+    "label": "Raven Workspace",
+    "options": "Raven Workspace"
+   },
+   {
+    "fieldname": "task_reminders_section",
+    "fieldtype": "Section Break",
+    "label": "Automated Reminders"
+   },
+   {
+    "default": "0",
+    "fieldname": "enable_task_reminders",
+    "fieldtype": "Check",
+    "label": "Enable Automated Reminders"
+   },
+   {
+    "default": "3",
+    "description": "Alert the assignee this many days before a task's due date.",
+    "fieldname": "reminder_days_before_due",
+    "fieldtype": "Int",
+    "label": "Remind Days Before Due"
+   },
+   {
+    "default": "1",
+    "description": "Re-alert the assignee if a task is still overdue after this many days.",
+    "fieldname": "reminder_days_after_overdue",
+    "fieldtype": "Int",
+    "label": "Remind Days After Overdue"
+   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,

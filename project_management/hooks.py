@@ -212,6 +212,15 @@ csrf_exempt = [
 # 	],
 # }
 
+scheduler_events = {
+	"cron": {
+		# Automated task reminders - runs daily at 09:00 server time
+		"00 09 * * *": [
+			"project_management.api.reminders.send_overdue_task_reminders"
+		],
+	},
+}
+
 # Testing
 # -------
 
