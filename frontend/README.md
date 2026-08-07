@@ -230,6 +230,7 @@ flowchart TD
 | Frappe backend           | DocTypes, workflows, permissions, and business logic                   |
 
 Every page fetches data through either a **resource** from `src/data/resources.js` (e.g. `useProject`, `useTasks`) or a direct `frappeRequest` call. No page hardcodes API URLs; endpoints are centralized in the data layer (src/data/).
+
 ---
 
 
