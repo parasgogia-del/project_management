@@ -502,7 +502,6 @@ Frappe UI (1.0.0-beta.29)
 Vue Router 4
 Feather Icons
 Tailwind CSS 3 (Frappe UI preset)
-PostCSS / Autoprefixer
 Frappe Framework (backend, via whitelisted APIs)
 ```
 ---
