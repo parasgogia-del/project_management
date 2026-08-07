@@ -82,7 +82,7 @@ The frontend is a **same-origin SPA** served by Frappe. It makes `frappeRequest`
 - **Attachments** — upload/download files on projects, deliverables, and tasks
 - **Gantt chart** — visual timeline of task schedules for a project
 - **Reports** — daily/weekly progress reports per project
-- **Notifications** — in-app notification list in the top bar
+- **Reminders** — Automated task reminders via Raven: DMs the assignee when a task is overdue or due soon, with per-project enable/disable and reminder-window settings.
 - **Member portal** — dashboard of my tasks, my projects, my deliverables, and today's focus
 - **Client portal** — dashboard of my projects and deliverables, plus review/approval actions
 - **Vendor portal** — dashboard of assigned tasks/deliverables and delivery submission
