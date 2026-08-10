@@ -6,24 +6,27 @@
  "creation": "2026-07-22 14:23:18.149270",
  "doctype": "DocType",
  "engine": "InnoDB",
-   "field_order": [
-   "task_details_section",
-   "title",
-   "project",
-   "deliverable",
-   "start_date",
-   "due_date",
-   "description",
+ "field_order": [
+  "task_details_section",
+  "title",
+  "project",
+  "deliverable",
+  "description",
   "column_break_vjuv",
-  "assigned_to",
-  "assigned_vendor",
   "priority",
   "status",
-"estimated_hours",
-    "actual_hours",
-    "is_today_focus",
-    "last_reminder_on"
-   ],
+  "is_today_focus",
+  "last_reminder_on",
+  "assignment_details_section",
+  "assigned_to",
+  "assigned_vendor",
+  "time_section",
+  "actual_hours",
+  "estimated_hours",
+  "dates_section",
+  "start_date",
+  "due_date"
+ ],
  "fields": [
   {
    "fieldname": "task_details_section",
@@ -63,10 +66,10 @@
    "label": "Assigned To",
    "options": "User"
   },
-   {
-    "fieldname": "due_date",
+  {
+   "fieldname": "due_date",
    "fieldtype": "Date",
-    "label": "Due Date"
+   "label": "Due Date"
   },
   {
    "fieldname": "start_date",
@@ -107,22 +110,37 @@
    "label": "Assigned Vendor",
    "options": "Vendor"
   },
-{
-    "default": "0",
-    "fieldname": "is_today_focus",
-    "fieldtype": "Check",
-    "label": "Today's Focus"
-   },
-   {
-    "fieldname": "last_reminder_on",
-    "fieldtype": "Date",
-    "label": "Last Reminder Sent On"
-   }
-  ],
+  {
+   "default": "0",
+   "fieldname": "is_today_focus",
+   "fieldtype": "Check",
+   "label": "Today's Focus"
+  },
+  {
+   "fieldname": "last_reminder_on",
+   "fieldtype": "Date",
+   "label": "Last Reminder Sent On"
+  },
+  {
+   "fieldname": "time_section",
+   "fieldtype": "Section Break",
+   "label": "Time"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "assignment_details_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment Details"
+  }
+ ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
-  "modified": "2026-07-26 10:00:00.000000",
+ "modified": "2026-08-10 11:28:58.783629",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Task",

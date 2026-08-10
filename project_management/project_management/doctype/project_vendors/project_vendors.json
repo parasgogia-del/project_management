@@ -7,13 +7,16 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "vendor_details_section",
   "vendor",
-  "contract_start",
-  "contract_end",
   "company",
   "email",
   "status",
-  "notes"
+  "additional_information_section",
+  "notes",
+  "contract_details_section",
+  "contract_start",
+  "contract_end"
  ],
  "fields": [
   {
@@ -63,13 +66,28 @@
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Notes"
+  },
+  {
+   "fieldname": "vendor_details_section",
+   "fieldtype": "Section Break",
+   "label": "Vendor Details"
+  },
+  {
+   "fieldname": "contract_details_section",
+   "fieldtype": "Section Break",
+   "label": "Contract Details"
+  },
+  {
+   "fieldname": "additional_information_section",
+   "fieldtype": "Section Break",
+   "label": "Additional Information"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-27 16:43:30.434680",
+ "modified": "2026-08-10 11:55:38.661627",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Vendors",

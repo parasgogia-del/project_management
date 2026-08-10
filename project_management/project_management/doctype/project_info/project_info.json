@@ -11,20 +11,22 @@
   "project_name",
   "client",
   "project_manager",
+  "raven_workspace",
+  "column_break_cvwv",
+  "progress",
   "status",
+  "description",
+  "dates_section",
   "start_date",
   "end_date",
-  "progress",
-  "raven_workspace",
-"column_break_cvwv",
-   "vendors",
-   "project_members",
-   "description",
-   "task_reminders_section",
-   "enable_task_reminders",
-   "reminder_days_before_due",
-   "reminder_days_after_overdue"
-  ],
+  "child_tables_section",
+  "vendors",
+  "project_members",
+  "task_reminders_section",
+  "enable_task_reminders",
+  "reminder_days_before_due",
+  "reminder_days_after_overdue"
+ ],
  "fields": [
   {
    "fieldname": "project_information_section",
@@ -96,42 +98,52 @@
    "fieldname": "column_break_cvwv",
    "fieldtype": "Column Break"
   },
-{
-    "fieldname": "raven_workspace",
-    "fieldtype": "Link",
-    "label": "Raven Workspace",
-    "options": "Raven Workspace"
-   },
-   {
-    "fieldname": "task_reminders_section",
-    "fieldtype": "Section Break",
-    "label": "Automated Reminders"
-   },
-   {
-    "default": "0",
-    "fieldname": "enable_task_reminders",
-    "fieldtype": "Check",
-    "label": "Enable Automated Reminders"
-   },
-   {
-    "default": "3",
-    "description": "Alert the assignee this many days before a task's due date.",
-    "fieldname": "reminder_days_before_due",
-    "fieldtype": "Int",
-    "label": "Remind Days Before Due"
-   },
-   {
-    "default": "1",
-    "description": "Re-alert the assignee if a task is still overdue after this many days.",
-    "fieldname": "reminder_days_after_overdue",
-    "fieldtype": "Int",
-    "label": "Remind Days After Overdue"
-   }
+  {
+   "fieldname": "raven_workspace",
+   "fieldtype": "Link",
+   "label": "Raven Workspace",
+   "options": "Raven Workspace"
+  },
+  {
+   "fieldname": "task_reminders_section",
+   "fieldtype": "Section Break",
+   "label": "Automated Reminders"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_task_reminders",
+   "fieldtype": "Check",
+   "label": "Enable Automated Reminders"
+  },
+  {
+   "default": "3",
+   "description": "Alert the assignee this many days before a task's due date.",
+   "fieldname": "reminder_days_before_due",
+   "fieldtype": "Int",
+   "label": "Remind Days Before Due"
+  },
+  {
+   "default": "1",
+   "description": "Re-alert the assignee if a task is still overdue after this many days.",
+   "fieldname": "reminder_days_after_overdue",
+   "fieldtype": "Int",
+   "label": "Remind Days After Overdue"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "child_tables_section",
+   "fieldtype": "Section Break",
+   "label": "Child Tables"
+  }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-30 10:44:51.403685",
+ "modified": "2026-08-10 11:24:24.141003",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Info",

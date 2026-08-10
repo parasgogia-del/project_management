@@ -7,12 +7,16 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "user_details_section",
   "user",
-  "project_role",
-  "is_active",
-  "assigned_on",
+  "email",
+  "additional_information_section",
   "notes",
-  "email"
+  "assignment_details_section",
+  "assigned_on",
+  "project_role_section",
+  "project_role",
+  "is_active"
  ],
  "fields": [
   {
@@ -54,13 +58,33 @@
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "Email"
+  },
+  {
+   "fieldname": "user_details_section",
+   "fieldtype": "Section Break",
+   "label": "User details"
+  },
+  {
+   "fieldname": "additional_information_section",
+   "fieldtype": "Section Break",
+   "label": "Additional Information"
+  },
+  {
+   "fieldname": "assignment_details_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment Details"
+  },
+  {
+   "fieldname": "project_role_section",
+   "fieldtype": "Section Break",
+   "label": "Project Role"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-27 16:46:59.430289",
+ "modified": "2026-08-10 11:54:48.452394",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Member",
