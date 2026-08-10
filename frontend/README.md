@@ -430,6 +430,11 @@ No secrets, tokens, or credentials are stored in the repository.
 
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/c7b8cf16-629c-4a3b-ae46-dd66176af9c7" />
 
+### Reports
+
+<img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/2b2feb87-6039-46d5-8385-c62b78160fa5" />
+
+
 ### Raven Integration:-
 
 #### Internal
