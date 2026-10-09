@@ -14,6 +14,11 @@
   "column_break_jzon",
   "status",
   "due_date",
+  "billing_section",
+  "amount",
+  "is_billed",
+  "column_break_billing",
+  "sales_invoice",
   "tasks_section",
   "tasks",
   "delivery_details_section",
@@ -92,6 +97,35 @@
    "fieldname": "delivery_date",
    "fieldtype": "Date",
    "label": "Delivery Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "default": "0",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Invoice Amount",
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_billed",
+   "fieldtype": "Check",
+   "label": "Billed"
+  },
+  {
+   "fieldname": "column_break_billing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
    "read_only": 1
   },
   {

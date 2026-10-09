@@ -57,7 +57,7 @@
   },
   {
    "fieldname": "description",
-   "fieldtype": "Small Text",
+   "fieldtype": "Text Editor",
    "label": "Description"
   },
   {
@@ -140,7 +140,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-10 11:28:58.783629",
+ "modified": "2026-10-01 18:34:17.535338",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Task",

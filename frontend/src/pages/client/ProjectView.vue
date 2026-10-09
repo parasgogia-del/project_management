@@ -87,6 +87,13 @@
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <CommentSection doctype="Project Info" :docname="projectId" />
       </div>
+
+      <!-- Support Tickets -->
+      <HelpdeskSection
+        :project-id="projectId"
+        can-create
+        can-comment
+      />
     </template>
   </div>
 
@@ -124,10 +131,11 @@ import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import HelpdeskSection from '@/components/HelpdeskSection.vue'
 
 export default {
   name: 'ClientProjectView',
-  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, Autocomplete, ProgressBar, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, Autocomplete, ProgressBar, FileUpload, CommentSection, HelpdeskSection },
   data() {
     return {
       project: null, deliverables: [], tasks: [], loading: true,

@@ -22,6 +22,12 @@
   "child_tables_section",
   "vendors",
   "project_members",
+  "billing_section",
+  "customer",
+  "billing_currency",
+  "billing_company",
+  "column_break_billing",
+  "taxes_and_charges",
   "task_reminders_section",
   "enable_task_reminders",
   "reminder_days_before_due",
@@ -103,6 +109,39 @@
    "fieldtype": "Link",
    "label": "Raven Workspace",
    "options": "Raven Workspace"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing (ERPNext)"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "billing_currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "billing_company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_billing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "taxes_and_charges",
+   "fieldtype": "Link",
+   "label": "Sales Taxes and Charges Template",
+   "options": "Sales Taxes and Charges Template"
   },
   {
    "fieldname": "task_reminders_section",

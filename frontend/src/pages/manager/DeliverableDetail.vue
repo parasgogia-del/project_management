@@ -44,6 +44,16 @@
                 <p class="text-xs text-gray-500">Access Link / Notes</p>
                 <p class="text-gray-700 mt-0.5">{{ deliverable.access_link__notes }}</p>
               </div>
+              <div>
+                <p class="text-xs text-gray-500">Invoice Amount</p>
+                <p class="text-gray-700 mt-0.5">{{ deliverable.amount ? formatAmount(deliverable.amount) : 'Not set' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Billed</p>
+                <p class="text-gray-700 mt-0.5">
+                  {{ deliverable.is_billed ? `Yes (${deliverable.sales_invoice || ''})` : 'No' }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -118,6 +128,7 @@
         <div class="space-y-4">
           <Input v-model="editForm.title" label="Title *" placeholder="Deliverable title" />
           <Input type="date" v-model="editForm.due_date" label="Due Date" />
+          <Input v-model="editForm.amount" type="number" step="0.01" label="Invoice Amount" placeholder="0.00" />
           <Input v-model="editForm.description" type="textarea" :rows="3" label="Description" />
         </div>
       </template>
@@ -167,6 +178,7 @@ export default {
       editForm: {
         title: '',
         due_date: '',
+        amount: '',
         description: '',
       },
     }
@@ -194,6 +206,11 @@ export default {
     this.loadAll()
   },
   methods: {
+    formatAmount(value) {
+      const num = Number(value || 0)
+      if (!num) return '0'
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(num)
+    },
     async loadAll() {
       this.loading = true
       try {
@@ -231,6 +248,7 @@ export default {
       this.editForm = {
         title: this.deliverable.title || '',
         due_date: this.deliverable.due_date || '',
+        amount: this.deliverable.amount ?? '',
         description: this.deliverable.description || '',
       }
       this.showEditModal = true

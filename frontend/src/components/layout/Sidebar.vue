@@ -80,6 +80,7 @@ export default {
         { label: 'Projects', icon: 'lucide-folder', route: '/projects' },
         { label: 'Deliverables', icon: 'lucide-package', route: '/deliverables' },
         { label: 'Tasks', icon: 'lucide-list-todo', route: '/tasks' },
+        { label: 'Support', icon: 'lucide-life-buoy', route: '/tickets' },
       ],
       portalNav: [
         { label: 'Member Portal', icon: 'lucide-users', route: '/member/dashboard' },
@@ -88,9 +89,11 @@ export default {
       ],
       memberNav: [
         { label: 'Dashboard', icon: 'lucide-home', route: '/member/dashboard' },
+        { label: 'Support', icon: 'lucide-life-buoy', route: '/tickets' },
       ],
       clientNav: [
         { label: 'Dashboard', icon: 'lucide-home', route: '/client/dashboard' },
+        { label: 'Support', icon: 'lucide-life-buoy', route: '/tickets' },
       ],
       vendorNav: [
         { label: 'Dashboard', icon: 'lucide-home', route: '/vendor/dashboard' },

@@ -64,6 +64,37 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-800 mb-4">Billing (ERPNext)</h2>
+      <p v-if="billingError" class="text-xs text-red-500 mb-3">{{ billingError }}</p>
+      <div class="grid grid-cols-2 gap-4">
+        <Autocomplete
+          :model-value="form.customer"
+          :options="billingOptions.customers"
+          label="Customer"
+          placeholder="Select ERPNext customer"
+          @change="form.customer = $event?.value || ''"
+        />
+        <Autocomplete
+          :model-value="form.billing_company"
+          :options="billingOptions.companies"
+          label="Company"
+          placeholder="Select company"
+          @change="form.billing_company = $event?.value || ''"
+        />
+        <Autocomplete
+          :model-value="form.billing_currency"
+          :options="billingOptions.currencies"
+          label="Currency"
+          placeholder="Select currency"
+          @change="form.billing_currency = $event?.value || ''"
+        />
+      </div>
+      <p class="text-xs text-gray-400 mt-3">
+        Set a Customer and Company to enable generating Sales Invoices for approved deliverables.
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold text-gray-800">Project Members</h2>
         <Button variant="ghost" icon-left="plus" @click="addMember">Add Member</Button>
@@ -113,22 +144,46 @@
         <div
           v-for="(vendor, idx) in form.vendors"
           :key="idx"
-          class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+          class="p-3 bg-gray-50 rounded-lg"
         >
-          <Autocomplete
-            :model-value="vendor.vendor"
-            :options="formOptions.vendors"
-            placeholder="Search or select a vendor"
-            class="flex-1"
-            @change="vendor.vendor = $event?.value || ''"
-          />
-          <Input
-            type="select"
-            v-model="vendor.status"
-            :options="vendorStatusOptions"
-            class="w-36 shrink-0"
-          />
-          <Button variant="ghost" icon="x" @click="removeVendor(idx)" class="shrink-0" />
+          <div class="flex items-center gap-3">
+            <Autocomplete
+              :model-value="vendor.vendor"
+              :options="formOptions.vendors"
+              placeholder="Search or select a vendor"
+              class="flex-1"
+              @change="vendor.vendor = $event?.value || ''"
+            />
+            <Input
+              type="select"
+              v-model="vendor.status"
+              :options="vendorStatusOptions"
+              class="w-36 shrink-0"
+            />
+            <Button variant="ghost" icon="x" @click="removeVendor(idx)" class="shrink-0" />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <Autocomplete
+              :model-value="vendor.supplier"
+              :options="billingOptions.suppliers"
+              placeholder="Supplier (ERPNext)"
+              class="w-full"
+              @change="vendor.supplier = $event?.value || ''"
+            />
+            <Autocomplete
+              :model-value="vendor.item"
+              :options="billingOptions.items"
+              placeholder="Item"
+              class="w-full"
+              @change="vendor.item = $event?.value || ''"
+            />
+            <Input
+              v-model="vendor.amount"
+              type="number"
+              placeholder="Purchase amount"
+              class="w-full"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -161,6 +216,8 @@ export default {
       saving: false,
       error: '',
       formOptions: { clients: [], project_managers: [], members: [], vendors: [] },
+      billingOptions: { customers: [], companies: [], currencies: [], items: [], suppliers: [] },
+      billingError: '',
       projectStatusOptions: ['Planning', 'In Progress', 'Completed', 'On Hold', 'Cancelled'],
       memberRoleOptions: ['Project Manager', 'Developer', 'Designer', 'QA', 'Business Analyst', 'UI/UX Designer', 'Client Reviewer'],
       vendorStatusOptions: ['Active', 'Inactive', 'Suspended'],
@@ -172,6 +229,9 @@ export default {
         start_date: '',
         end_date: '',
         description: '',
+        customer: '',
+        billing_company: '',
+        billing_currency: '',
         project_members: [],
         vendors: [],
       },
@@ -185,13 +245,39 @@ export default {
     }
   },
   methods: {
-    async loadFormOptions() {
+    async     loadFormOptions() {
       try {
         const res = await frappeRequest({
           url: 'project_management.api.client.get_form_options',
           method: 'POST',
         })
         this.formOptions = res || this.formOptions
+      } catch {}
+      try {
+        const billing = await frappeRequest({
+          url: 'project_management.api.invoicing.get_billing_config',
+          method: 'POST',
+        })
+        this.billingOptions = {
+          customers: (billing.customers || []).map(c => ({
+            label: c.customer_name || c.name,
+            value: c.name,
+          })),
+          companies: billing.companies || [],
+          currencies: billing.currencies || [],
+        }
+      } catch (err) {
+        this.billingError = err.message || 'ERPNext integration not available'
+      }
+      try {
+        const purchasing = await frappeRequest({
+          url: 'project_management.api.purchasing.get_purchase_config',
+          method: 'POST',
+        })
+        if (purchasing) {
+          this.billingOptions.items = purchasing.items || this.billingOptions.items
+          this.billingOptions.suppliers = purchasing.suppliers || this.billingOptions.suppliers
+        }
       } catch {}
     },
     async loadProject(name) {
@@ -206,6 +292,9 @@ export default {
             start_date: project.start_date || '',
             end_date: project.end_date || '',
             description: project.description || '',
+            customer: project.customer || '',
+            billing_company: project.billing_company || '',
+            billing_currency: project.billing_currency || '',
             project_members: (project.project_members || []).map(m => ({
               name: m.name,
               user: m.user,
@@ -217,7 +306,12 @@ export default {
             vendors: (project.vendors || []).map(v => ({
               name: v.name,
               vendor: v.vendor,
+              supplier: v.supplier || '',
               status: v.status || 'Active',
+              item: v.item || '',
+              amount: v.amount || 0,
+              is_billed: v.is_billed || 0,
+              purchase_invoice: v.purchase_invoice || null,
               contract_start: v.contract_start,
               contract_end: v.contract_end,
               notes: v.notes || '',
@@ -243,7 +337,12 @@ export default {
     addVendor() {
       this.form.vendors.push({
         vendor: '',
+        supplier: '',
         status: 'Active',
+        item: '',
+        amount: 0,
+        is_billed: 0,
+        purchase_invoice: null,
         notes: '',
       })
     },

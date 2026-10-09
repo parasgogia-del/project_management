@@ -47,6 +47,20 @@
             </div>
           </div>
 
+          <!-- Billing -->
+          <BillingSection :project-id="projectId" />
+
+          <!-- Purchases -->
+          <PurchaseSection :project-id="projectId" />
+
+          <!-- Support Tickets -->
+          <HelpdeskSection
+            :project-id="projectId"
+            can-create
+            can-update
+            can-comment
+          />
+
           <!-- Deliverables -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-4">
@@ -240,10 +254,13 @@ import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import BillingSection from '@/components/BillingSection.vue'
+import PurchaseSection from '@/components/PurchaseSection.vue'
+import HelpdeskSection from '@/components/HelpdeskSection.vue'
 
 export default {
   name: 'ProjectDetail',
-  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, ProgressBar, FileUpload, CommentSection },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, Dialog, Input, ProgressBar, FileUpload, CommentSection, BillingSection, PurchaseSection, HelpdeskSection },
   data() {
     return {
       project: null,

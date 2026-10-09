@@ -20,4 +20,13 @@ export const statusColorMap = {
   Active: 'green',
   Inactive: 'gray',
   Suspended: 'red',
+  Replied: 'blue',
+  Urgent: 'red',
+}
+
+export const ticketPriorityColors = {
+  Urgent: 'red',
+  High: 'red',
+  Medium: 'blue',
+  Low: 'gray',
 }

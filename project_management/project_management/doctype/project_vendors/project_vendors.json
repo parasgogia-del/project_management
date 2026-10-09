@@ -6,27 +6,71 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "field_order": [
-  "vendor_details_section",
-  "vendor",
-  "company",
-  "email",
-  "status",
-  "additional_information_section",
-  "notes",
-  "contract_details_section",
-  "contract_start",
-  "contract_end"
- ],
- "fields": [
-  {
-   "fieldname": "vendor",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Vendor",
-   "options": "Vendor",
-   "reqd": 1
-  },
+  "field_order": [
+   "vendor_details_section",
+   "vendor",
+   "supplier",
+   "company",
+   "email",
+   "status",
+   "purchases_section",
+   "item",
+   "amount",
+   "is_billed",
+   "purchase_invoice",
+   "additional_information_section",
+   "notes",
+   "contract_details_section",
+   "contract_start",
+   "contract_end"
+  ],
+  "fields": [
+   {
+    "fieldname": "vendor",
+    "fieldtype": "Link",
+    "in_list_view": 1,
+    "label": "Vendor",
+    "options": "Vendor",
+    "reqd": 1
+   },
+   {
+    "fieldname": "supplier",
+    "fieldtype": "Link",
+    "in_list_view": 1,
+    "label": "Supplier",
+    "options": "Supplier"
+   },
+   {
+    "fieldname": "purchases_section",
+    "fieldtype": "Section Break",
+    "label": "Purchases"
+   },
+   {
+    "fieldname": "item",
+    "fieldtype": "Link",
+    "in_list_view": 1,
+    "label": "Item",
+    "options": "Item"
+   },
+   {
+    "fieldname": "amount",
+    "fieldtype": "Currency",
+    "in_list_view": 1,
+    "label": "Purchase Amount"
+   },
+   {
+    "fieldname": "is_billed",
+    "fieldtype": "Check",
+    "in_list_view": 1,
+    "label": "Is Billed"
+   },
+   {
+    "fieldname": "purchase_invoice",
+    "fieldtype": "Link",
+    "label": "Purchase Invoice",
+    "options": "Purchase Invoice",
+    "read_only": 1
+   },
   {
    "fieldname": "contract_start",
    "fieldtype": "Date",

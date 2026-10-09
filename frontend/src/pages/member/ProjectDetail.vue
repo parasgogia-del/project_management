@@ -156,6 +156,13 @@
           </div>
         </div>
       </div>
+
+      <!-- Support Tickets -->
+      <HelpdeskSection
+        :project-id="projectId"
+        can-create
+        can-comment
+      />
     </template>
   </div>
 </template>
@@ -165,10 +172,11 @@ import { FeatherIcon, frappeRequest, Button, Badge, Avatar, LoadingIndicator } f
 import { useProject, useTasks, useDeliverablesWithDetails } from '@/data/resources'
 import { statusColorMap } from '@/utils/statusColors'
 import ProgressBar from '@/components/ProgressBar.vue'
+import HelpdeskSection from '@/components/HelpdeskSection.vue'
 
 export default {
   name: 'MemberProjectDetail',
-  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, ProgressBar },
+  components: { FeatherIcon, Button, Badge, Avatar, LoadingIndicator, ProgressBar, HelpdeskSection },
   data() {
     return {
       project: null,

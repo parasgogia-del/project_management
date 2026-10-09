@@ -13,10 +13,13 @@ declare module 'vue' {
   export interface GlobalComponents {
     ActivityTimeline: typeof import('./src/components/ActivityTimeline.vue')['default']
     AppLayout: typeof import('./src/components/layout/AppLayout.vue')['default']
+    BillingSection: typeof import('./src/components/BillingSection.vue')['default']
     CommentSection: typeof import('./src/components/CommentSection.vue')['default']
     EmptyState: typeof import('./src/components/EmptyState.vue')['default']
     FileUpload: typeof import('./src/components/FileUpload.vue')['default']
+    HelpdeskSection: typeof import('./src/components/HelpdeskSection.vue')['default']
     ProgressBar: typeof import('./src/components/ProgressBar.vue')['default']
+    PurchaseSection: typeof import('./src/components/PurchaseSection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/layout/Sidebar.vue')['default']

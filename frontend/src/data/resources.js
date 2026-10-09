@@ -144,3 +144,35 @@ export function useVendorTasks(vendor_name = '') {
     auto: false,
   })
 }
+
+// Helpdesk APIs
+export function useProjectTickets(project = '') {
+  return createResource({
+    url: 'project_management.api.helpdesk.get_project_tickets',
+    params: { project },
+    auto: false,
+  })
+}
+
+export function useTicket(name = '') {
+  return createResource({
+    url: 'project_management.api.helpdesk.get_ticket',
+    params: { name },
+    auto: false,
+  })
+}
+
+export function useTicketStats(project = '') {
+  return createResource({
+    url: 'project_management.api.helpdesk.get_ticket_stats',
+    params: { project },
+    auto: false,
+  })
+}
+
+export function useMyTickets() {
+  return createResource({
+    url: 'project_management.api.helpdesk.get_my_tickets',
+    auto: false,
+  })
+}

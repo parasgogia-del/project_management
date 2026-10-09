@@ -102,6 +102,12 @@ const routes = [
         component: () => import('@/pages/manager/TaskDetail.vue'),
         meta: { roles: ['Project Manager'] },
       },
+      {
+        path: 'tickets',
+        name: 'Tickets',
+        component: () => import('@/pages/Tickets.vue'),
+        meta: { roles: ['Project Manager', 'Project Member', 'Client'] },
+      },
       // Member portal
       {
         path: 'member/dashboard',

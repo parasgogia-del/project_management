@@ -110,7 +110,7 @@ def update_deliverable(name=None, data=None):
         import json
         data = json.loads(data)
 
-    allowed_fields = ["title", "project", "description", "due_date", "status"]
+    allowed_fields = ["title", "project", "description", "due_date", "status", "amount"]
     filtered = {k: v for k, v in data.items() if k in allowed_fields}
 
     doc = frappe.get_doc("Deliverable", name)
@@ -294,7 +294,7 @@ def update_project(name=None, data=None):
         import json
         data = json.loads(data)
 
-    allowed_fields = ["project_name", "client", "project_manager", "status", "start_date", "end_date", "description", "enable_task_reminders", "reminder_days_before_due", "reminder_days_after_overdue"]
+    allowed_fields = ["project_name", "client", "project_manager", "status", "start_date", "end_date", "description", "enable_task_reminders", "reminder_days_before_due", "reminder_days_after_overdue", "customer", "billing_currency", "billing_company", "taxes_and_charges"]
 
     doc = frappe.get_doc("Project Info", name)
     for field, value in data.items():
@@ -401,8 +401,15 @@ def update_task(name=None, data=None):
 
 def _replace_child_table(doc, fieldname, rows):
     """Replace a parent doc's child table rows in memory so the parent's
-    save() triggers on_update (which syncs Raven channels)."""
-    _skip = {"name", "doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
+    save() triggers on_update (which syncs Raven channels).
+
+    The child row `name` is preserved (not skipped) so Frappe updates the
+    existing child rows in place instead of deleting and recreating them.
+    This keeps fields like vendor `is_billed` / `purchase_invoice` intact when
+    the project is edited, preventing linked Purchase Invoices from being
+    orphaned and duplicated.
+    """
+    _skip = {"doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
 
     doc.set(fieldname, [])
     for row in rows:
