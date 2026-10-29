@@ -182,7 +182,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-10 11:24:24.141003",
+ "modified": "2026-10-27 19:37:45.721118",
  "modified_by": "Administrator",
  "module": "Project Management",
  "name": "Project Info",
@@ -238,15 +238,6 @@
    "read": 1,
    "report": 1,
    "role": "Vendor",
-   "share": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Guest",
    "share": 1
   }
  ],

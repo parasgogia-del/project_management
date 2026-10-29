@@ -1,0 +1,54 @@
+[
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-07-22 10:52:56.216721",
+  "name": "Project Manager",
+  "restrict_to_domain": null,
+  "role_name": "Project Manager",
+  "two_factor_auth": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-07-22 10:56:40.159523",
+  "name": "Project Member",
+  "restrict_to_domain": null,
+  "role_name": "Project Member",
+  "two_factor_auth": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-07-22 10:57:07.247276",
+  "name": "Client",
+  "restrict_to_domain": null,
+  "role_name": "Client",
+  "two_factor_auth": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2026-07-22 10:57:17.751508",
+  "name": "Vendor",
+  "restrict_to_domain": null,
+  "role_name": "Vendor",
+  "two_factor_auth": 0
+ }
+]

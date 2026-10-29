@@ -1,19 +1,11 @@
-import functools
 import json
+from collections import Counter
 
 import frappe
+from project_management.utils.permissions import require_roles
 
 
-def require_roles(*roles):
-    def decorator(fn):
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            user_roles = set(frappe.get_roles())
-            if not any(r in user_roles for r in roles):
-                frappe.throw("You do not have permission", frappe.PermissionError)
-            return fn(*args, **kwargs)
-        return wrapper
-    return decorator
+STAFF_ROLES = {"Project Manager", "Project Member"}
 
 
 def _value(v):
@@ -23,38 +15,52 @@ def _value(v):
     return v
 
 
+def _is_staff():
+    return bool(set(frappe.get_roles()) & STAFF_ROLES)
+
+
 def _can_access_project(project):
-    if not project:
+    if not project or not frappe.db.exists("Project Info", project):
         return False
-    p = frappe.get_doc("Project Info", project)
     user = frappe.session.user
     roles = set(frappe.get_roles())
-    if "Project Manager" in roles:
+    if user == "Administrator" or roles & {"Project Manager", "System Manager"}:
         return True
-    if p.client == user:
+    if frappe.db.get_value("Project Info", project, "client") == user:
         return True
-    # member check
-    for m in p.project_members:
-        if m.get("user") == user:
-            return True
-    return False
+    return bool(
+        frappe.db.exists(
+            "Project Member",
+            {"parent": project, "parenttype": "Project Info", "user": user},
+        )
+    )
+
+
+def _check_ticket_access(doc):
+    """Project access + (for non-staff) only their own tickets."""
+    if not _can_access_project(doc.custom_project):
+        frappe.throw("No access", frappe.PermissionError)
+    if not _is_staff() and doc.raised_by != frappe.session.user:
+        frappe.throw("Only your own tickets", frappe.PermissionError)
 
 
 @frappe.whitelist()
 def get_project_tickets(project):
     if not _can_access_project(project):
         frappe.throw("No access", frappe.PermissionError)
-    tickets = frappe.get_all(
+    filters = {"custom_project": project}
+    if not _is_staff():
+        filters["raised_by"] = frappe.session.user
+    return frappe.get_all(
         "HD Ticket",
-        filters={"custom_project": project},
+        filters=filters,
         fields=["name", "subject", "status", "priority", "raised_by",
                 "agent_group", "creation", "modified"],
         order_by="creation desc",
     )
-    return tickets
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def create_ticket(project, data=None):
     if not _can_access_project(project):
         frappe.throw("No access", frappe.PermissionError)
@@ -62,6 +68,8 @@ def create_ticket(project, data=None):
         data = json.loads(data)
     if not data:
         frappe.throw("Data is required")
+    if not data.get("subject"):
+        frappe.throw("Subject is required")
     ticket = frappe.get_doc({
         "doctype": "HD Ticket",
         "subject": data.get("subject"),
@@ -71,22 +79,13 @@ def create_ticket(project, data=None):
         "raised_by": frappe.session.user,
     })
     ticket.insert(ignore_permissions=True)
-    frappe.db.commit()
     return ticket.as_dict()
 
 
 @frappe.whitelist()
 def get_ticket(name):
     doc = frappe.get_doc("HD Ticket", name)
-    # check the ticket's project access
-    if not _can_access_project(doc.custom_project):
-        frappe.throw("No access", frappe.PermissionError)
-    user_roles = set(frappe.get_roles())
-    is_staff = user_roles.intersection(
-        {"Project Manager", "Project Member"}
-    )
-    if not is_staff and doc.raised_by != frappe.session.user:
-        frappe.throw("Only your own tickets", frappe.PermissionError)
+    _check_ticket_access(doc)
     return {
         "ticket": doc.as_dict(),
         "comments": _get_ticket_comments(name),
@@ -121,7 +120,7 @@ def _get_ticket_comments(name):
     return comments
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 @require_roles("Project Manager")
 def update_ticket(name, data=None):
     if isinstance(data, str):
@@ -135,23 +134,15 @@ def update_ticket(name, data=None):
         if field in data:
             doc.set(field, _value(data[field]))
     doc.save(ignore_permissions=True)
-    frappe.db.commit()
     return doc.as_dict()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def add_ticket_comment(name, content=None):
     if not content:
         frappe.throw("Content is required")
     doc = frappe.get_doc("HD Ticket", name)
-    if not _can_access_project(doc.custom_project):
-        frappe.throw("No access", frappe.PermissionError)
-    user_roles = set(frappe.get_roles())
-    is_staff = user_roles.intersection(
-        {"Project Manager", "Project Member"}
-    )
-    if not is_staff and doc.raised_by != frappe.session.user:
-        frappe.throw("Only your own tickets", frappe.PermissionError)
+    _check_ticket_access(doc)
     comment = frappe.get_doc({
         "doctype": "HD Ticket Comment",
         "reference_ticket": name,
@@ -159,11 +150,10 @@ def add_ticket_comment(name, content=None):
         "commented_by": frappe.session.user,
     })
     comment.insert(ignore_permissions=True)
-    frappe.db.commit()
     return {"status": "ok", "name": comment.name}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def edit_ticket_comment(name, content=None):
     if not content:
         frappe.throw("Content is required")
@@ -175,11 +165,10 @@ def edit_ticket_comment(name, content=None):
         frappe.throw("Only your own comments", frappe.PermissionError)
     comment.content = content
     comment.save(ignore_permissions=True)
-    frappe.db.commit()
     return {"status": "ok"}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST", "DELETE"])
 def delete_ticket_comment(name):
     comment = frappe.get_doc("HD Ticket Comment", name)
     ticket = frappe.get_doc("HD Ticket", comment.reference_ticket)
@@ -187,8 +176,7 @@ def delete_ticket_comment(name):
         frappe.throw("No access", frappe.PermissionError)
     if comment.commented_by != frappe.session.user:
         frappe.throw("Only your own comments", frappe.PermissionError)
-    comment.delete(ignore_permissions=True)
-    frappe.db.commit()
+    frappe.delete_doc("HD Ticket Comment", name, ignore_permissions=True)
     return {"status": "ok"}
 
 
@@ -197,41 +185,43 @@ def get_my_tickets():
     """Role-based list of all tickets across the projects the user can access.
 
     - Project Manager: every ticket.
-    - Any other role (Client, Project Member, Vendor): only tickets on projects
-      where they are the client or a listed project member.
+    - Project Member: every ticket on projects where they are the client or a
+      listed project member.
+    - Anyone else (Client, Vendor): only tickets they raised, on projects where
+      they are the client or a listed project member.
     """
     fields = ["name", "subject", "status", "priority", "raised_by",
               "custom_project", "agent_group", "creation", "modified"]
+    user = frappe.session.user
     roles = set(frappe.get_roles())
+
     if "Project Manager" in roles:
         return frappe.get_all(
             "HD Ticket", fields=fields, order_by="creation desc"
         )
-    user = frappe.session.user
+
     accessible = set()
-    client_projects = frappe.get_all(
+    for p in frappe.get_all(
         "Project Info", filters={"client": user}, fields=["name"]
-    )
-    for p in client_projects:
+    ):
         accessible.add(p["name"])
-    member_projects = frappe.get_all(
-        "Project Member", filters={"user": user}, fields=["parent"]
-    )
-    for p in member_projects:
+    for p in frappe.get_all(
+        "Project Member",
+        filters={"user": user, "parenttype": "Project Info"},
+        fields=["parent"],
+    ):
         accessible.add(p["parent"])
+
     # keep only valid Project Info parents
-    if accessible:
-        accessible = {
-            n for n in accessible
-            if frappe.db.exists("Project Info", n)
-        }
+    accessible = {n for n in accessible if frappe.db.exists("Project Info", n)}
     if not accessible:
         return []
+
+    filters = {"custom_project": ["in", list(accessible)]}
+    if not _is_staff():
+        filters["raised_by"] = user
     return frappe.get_all(
-        "HD Ticket",
-        filters={"custom_project": ["in", list(accessible)]},
-        fields=fields,
-        order_by="creation desc",
+        "HD Ticket", filters=filters, fields=fields, order_by="creation desc"
     )
 
 
@@ -239,16 +229,10 @@ def get_my_tickets():
 def get_ticket_stats(project):
     if not _can_access_project(project):
         frappe.throw("No access", frappe.PermissionError)
-    rows = frappe.db.sql(
-        """
-        SELECT status, COUNT(*) AS count
-        FROM `tabHD Ticket`
-        WHERE custom_project = %s
-        GROUP BY status
-        """,
-        project,
-        as_dict=True,
-    )
-    stats = {row["status"]: row["count"] for row in rows}
-    stats["total"] = sum(stats.values())
+    filters = {"custom_project": project}
+    if not _is_staff():
+        filters["raised_by"] = frappe.session.user
+    statuses = frappe.get_all("HD Ticket", filters=filters, pluck="status")
+    stats = dict(Counter(statuses))
+    stats["total"] = len(statuses)
     return stats

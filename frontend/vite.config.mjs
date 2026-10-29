@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/assets/project_management/frontend/' : '/',
   server: {
     port: 8080,
+    proxy: {
+      '^/(api|assets|files|private)': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

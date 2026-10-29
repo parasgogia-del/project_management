@@ -84,68 +84,36 @@ jinja = {
 	]
 }
 
-# CSRF Exempt
-csrf_exempt = [
-	"project_management.api.client.get_progress_report",
-	"project_management.api.client.get_tasks",
-	"project_management.api.client.get_task",
-	"project_management.api.client.get_projects",
-	"project_management.api.client.get_project",
-	"project_management.api.client.get_deliverables",
-	"project_management.api.client.get_deliverable",
-	"project_management.api.client.get_deliverables_with_details",
-	"project_management.api.client.get_time_logs",
-	"project_management.api.client.get_comments",
-	"project_management.api.client.get_gantt_tasks",
-	"project_management.api.client.get_session_user",
-	"project_management.api.client.get_csrf_token",
-	"project_management.api.client.get_notifications",
-	"project_management.api.client.create_project",
-	"project_management.api.client.create_task",
-	"project_management.api.client.create_time_log",
-	"project_management.api.client.update_project",
-	"project_management.api.client.update_task_status",
-	"project_management.api.client.update_deliverable_status",
-	"project_management.api.client.add_comment",
-	"project_management.api.client.edit_comment",
-	"project_management.api.client.delete_comment",
-	"project_management.api.client.delete_project",
-	"project_management.api.client.update_task",
-	"project_management.api.client.toggle_today_focus",
-	"project_management.api.client.get_today_hours",
-	"project_management.api.invoicing.get_billing_config",
-	"project_management.api.invoicing.get_project_billing",
-	"project_management.api.invoicing.create_sales_invoice",
-	"project_management.api.invoicing.get_sales_invoice",
-	"project_management.api.invoicing.submit_sales_invoice",
-	"project_management.api.purchasing.get_purchase_billing",
-	"project_management.api.purchasing.get_purchase_config",
-	"project_management.api.purchasing.create_purchase_invoice",
-	"project_management.api.purchasing.get_purchase_invoice",
-	"project_management.api.purchasing.submit_purchase_invoice",
-	"project_management.api.vendor.get_vendor_projects",
-	"project_management.api.vendor.get_vendor_deliverables",
-	"project_management.api.vendor.get_vendor_tasks",
-	"project_management.api.file.upload_project_file",
-	"project_management.api.file.get_project_files",
-	"project_management.api.file.delete_project_file",
-	"project_management.api.file.upload_deliverable_file",
-	"project_management.api.file.get_deliverable_files",
-	"project_management.api.file.delete_deliverable_file",
-	"project_management.api.file.upload_task_file",
-	"project_management.api.file.get_task_files",
-	"project_management.api.file.delete_task_file",
-    "project_management.api.helpdesk.get_project_tickets",
-	"project_management.api.helpdesk.create_ticket",
-	"project_management.api.helpdesk.get_ticket",
-	"project_management.api.helpdesk.update_ticket",
-	"project_management.api.helpdesk.add_ticket_comment",
-	"project_management.api.helpdesk.edit_ticket_comment",
-	"project_management.api.helpdesk.delete_ticket_comment",
-	"project_management.api.helpdesk.get_ticket_stats",
-	"project_management.api.helpdesk.get_my_tickets",
+fixtures = [
+	{
+		"dt": "Workflow",
+		"filters": [["name", "in", ["Deliverable Approval"]]],
+	},
+	{
+		"dt": "Workflow State",
+		"filters": [["name", "in", [
+			"Draft", "WIP", "Ready for Approval",
+			"Awaiting Client Review", "Approved", "Changes Requested",
+		]]],
+	},
+	{
+		"dt": "Workflow Action Master",
+		"filters": [["name", "in", [
+			"Start Work", "Submit", "Send to Client",
+			"Approve", "Request Changes", "Resume Work",
+		]]],
+	},
+	{
+		"dt": "Role",
+		"filters": [["name", "in", [
+			"Project Member", "Project Manager", "Vendor", "Client",
+		]]],
+	},
+	{
+		"dt": "Custom Field",
+		"filters": [["dt", "=", "Deliverable"], ["fieldname", "=", "workflow_state"]],
+	},
 ]
-
 # Installation
 # ------------
 

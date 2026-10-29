@@ -1,0 +1,56 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "ok-sign",
+  "modified": "2026-07-21 16:11:27.363823",
+  "name": "Approved",
+  "style": "Success",
+  "workflow_state_name": "Approved"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-22 17:32:08.272049",
+  "name": "WIP",
+  "style": "Primary",
+  "workflow_state_name": "WIP"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-22 17:34:16.579423",
+  "name": "Changes Requested",
+  "style": "Danger",
+  "workflow_state_name": "Changes Requested"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-22 17:31:29.761815",
+  "name": "Draft",
+  "style": "Inverse",
+  "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-22 17:32:36.727043",
+  "name": "Ready for Approval",
+  "style": "Warning",
+  "workflow_state_name": "Ready for Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-22 17:33:12.847118",
+  "name": "Awaiting Client Review",
+  "style": "Info",
+  "workflow_state_name": "Awaiting Client Review"
+ }
+]
