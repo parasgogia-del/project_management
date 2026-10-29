@@ -539,9 +539,7 @@ No secrets, tokens, or credentials are stored in the repository.
 <img width="1857" height="1124" alt="image" src="https://github.com/user-attachments/assets/893510e8-388a-454c-9ff2-a82a307f0bb9" />
 
 ### Demo Video
-1. https://drive.google.com/file/d/1QtXaTpAfdvumrMaKsMpMF551uuitm5PN/view?usp=sharing
-2. https://drive.google.com/file/d/1AmOO5qXxBLqMx_sM-dZLZGVpEMPFUY1A/view?usp=sharing
-3. https://drive.google.com/file/d/19z08wirhlgM0j7WiQY8Bk9BuH6-RJVdm/view?usp=sharing
+https://drive.google.com/drive/folders/1IL98YRxjKUZyBvQpsFOWktSagN5ZqSwT
 
 ---
 
