@@ -1,23 +1,23 @@
-{% extends "templates/web.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Management</title>
+  {% for css in get_vite_css() %}
+  <link rel="stylesheet" href="{{ css }}">
+  {% endfor %}
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modals"></div>
+  <div id="popovers"></div>
 
-{% block head %}
-{{ super() }}
-{% for css in get_vite_css() %}
-<link rel="stylesheet" href="{{ css }}">
-{% endfor %}
-{% endblock %}
-
-{% block page_content %}
-<div id="app"></div>
-<div id="modals"></div>
-<div id="popovers"></div>
-{% endblock %}
-
-{% block script %}
-<script>
-  window.csrf_token = '{{ csrf_token }}';
-</script>
-{% for js in get_vite_js() %}
-<script type="module" src="{{ js }}"></script>
-{% endfor %}
-{% endblock %}
+  <script>
+    window.csrf_token = '{{ csrf_token }}';
+  </script>
+  {% for js in get_vite_js() %}
+  <script type="module" src="{{ js }}"></script>
+  {% endfor %}
+</body>
+</html>

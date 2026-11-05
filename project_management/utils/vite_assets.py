@@ -1,22 +1,19 @@
-"""
-Vite manifest reader for Frappe integration.
-
-Reads the Vite-generated .vite/manifest.json to resolve hashed asset filenames
-and provides Jinja helpers for injecting them into templates.
-"""
 import json
 import os
 
-_manifest_cache = None
+import frappe
 
 APP_NAME = "project_management"
 FRONTEND_DIR = "frontend"
 
+manifest_cache = {}
 
-def _get_manifest():
-    global _manifest_cache
-    if _manifest_cache is not None:
-        return _manifest_cache
+
+def load_manifest():
+    global manifest_cache
+    # Re-read on every request in developer mode; cache only a non-empty manifest.
+    if manifest_cache and not frappe.conf.developer_mode:
+        return manifest_cache
 
     manifest_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
@@ -27,26 +24,25 @@ def _get_manifest():
     )
 
     if not os.path.exists(manifest_path):
-        _manifest_cache = {}
-        return _manifest_cache
+        return {}
 
     with open(manifest_path, "r") as f:
-        _manifest_cache = json.load(f)
-    return _manifest_cache
+        manifest_cache = json.load(f)
+    return manifest_cache
 
 
-def _resolve_entry(entry_key=None):
-    manifest = _get_manifest()
+def resolve_entry(entry_key=None):
+    manifest = load_manifest()
     if entry_key and entry_key in manifest:
         return manifest[entry_key]
-    for key, value in manifest.items():
+    for value in manifest.values():
         if value.get("isEntry"):
             return value
     return {}
 
 
-def _get_chunk(chunk_key):
-    manifest = _get_manifest()
+def get_chunk(chunk_key):
+    manifest = load_manifest()
     if chunk_key in manifest:
         return manifest[chunk_key]
     for key, value in manifest.items():
@@ -55,25 +51,44 @@ def _get_chunk(chunk_key):
     return None
 
 
-def _asset_url(file_path):
+def asset_url(file_path):
     return f"/assets/{APP_NAME}/{FRONTEND_DIR}/{file_path}"
 
 
+def collect_css(chunk, visited=None):
+    """CSS of a chunk plus the CSS of every chunk it statically imports."""
+    visited = visited if visited is not None else set()
+    files = []
+    for css in chunk.get("css", []):
+        if css not in files:
+            files.append(css)
+    for imp in chunk.get("imports", []):
+        if imp in visited:
+            continue
+        visited.add(imp)
+        imported = get_chunk(imp)
+        if imported:
+            for css in collect_css(imported, visited):
+                if css not in files:
+                    files.append(css)
+    return files
+
+
 def get_vite_js(entry_key=None):
-    entry = _resolve_entry(entry_key)
+    entry = resolve_entry(entry_key)
     if not entry:
         return []
 
-    files = [_asset_url(entry["file"])]
+    files = [asset_url(entry["file"])]
     for imp in entry.get("imports", []):
-        chunk = _get_chunk(imp)
+        chunk = get_chunk(imp)
         if chunk:
-            files.append(_asset_url(chunk["file"]))
+            files.append(asset_url(chunk["file"]))
     return files
 
 
 def get_vite_css(entry_key=None):
-    entry = _resolve_entry(entry_key)
+    entry = resolve_entry(entry_key)
     if not entry:
         return []
-    return [_asset_url(css) for css in entry.get("css", [])]
+    return [asset_url(css) for css in collect_css(entry)]

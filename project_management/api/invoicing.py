@@ -1,10 +1,11 @@
-import functools
+import json
 
 import frappe
-from project_management.utils.permissions import require_roles
+
+BILLING_ROLES = ("Project Manager", "System Manager")
 
 
-def _erpnext_available():
+def erpnext_available():
     """Whether ERPNext app is installed and importable."""
     try:
         import erpnext  # noqa: F401
@@ -13,7 +14,7 @@ def _erpnext_available():
         return False
 
 
-def _valid_invoice_names(invoice_names):
+def get_valid_invoice_names(invoice_names):
     """Return only the given invoice names that are live (not Cancelled).
 
     A deliverable is only considered truly billed when its linked Sales
@@ -32,18 +33,20 @@ def _valid_invoice_names(invoice_names):
     return {r.name for r in rows if r.status != "Cancelled"}
 
 
-def _is_deliverable_billed(d, valid_invoice_names):
+def is_deliverable_billed(d, valid_invoices):
     """A deliverable is billed only if marked billed AND linked to a valid,
     non-cancelled Sales Invoice."""
-    return bool(d.is_billed and d.sales_invoice and d.sales_invoice in valid_invoice_names)
+    return bool(d.is_billed and d.sales_invoice and d.sales_invoice in valid_invoices)
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_billing_config():
     """Return ERPNext setup data needed for the billing UI:
     customers, companies, currencies, and default item/selling settings."""
-    if not _erpnext_available():
+
+    frappe.only_for(BILLING_ROLES)
+
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed. Please install ERPNext to use invoicing.", frappe.ValidationError)
 
     customers = frappe.get_all(
@@ -82,10 +85,13 @@ def get_billing_config():
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_project_billing(project=None):
+
     """Return billing-relevant data for a project: project setup, deliverables
     (with amounts and billed status), and existing sales invoices."""
+
+    frappe.only_for(BILLING_ROLES)
+
     if not project:
         frappe.throw("Project name is required")
 
@@ -103,10 +109,10 @@ def get_project_billing(project=None):
     # when linked to a valid (non-cancelled) Sales Invoice; otherwise it is
     # billable again so it can be (re-)invoiced.
     invoice_names = {d.sales_invoice for d in deliverables if d.sales_invoice}
-    valid_invoices = _valid_invoice_names(invoice_names)
+    valid_invoices = get_valid_invoice_names(invoice_names)
 
     for d in deliverables:
-        if not _is_deliverable_billed(d, valid_invoices):
+        if not is_deliverable_billed(d, valid_invoices):
             d.is_billed = 0
 
     invoices = []
@@ -135,7 +141,7 @@ def get_project_billing(project=None):
     }
 
 
-def _resolve_item(project_doc, billing_data):
+def resolve_item(project_doc, billing_data):
     """Pick a default sellable item for the invoice."""
     # User-supplied item
     item = (billing_data or {}).get("item")
@@ -151,29 +157,16 @@ def _resolve_item(project_doc, billing_data):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def create_sales_invoice(project=None, data=None):
-    """Generate a Sales Invoice from a project's billed deliverables.
 
-    Positional 'data' (dict or JSON):
-      - item: name of the item to bill
-      - uom: unit of measure (defaults to item's sales_uom or stock_uom)
-      - delivery_note: optional delivery note reference
-      - due_date: invoice due date
-      - posting_date: invoice date (defaults to today)
-      - remark: remark on the invoice
+    frappe.only_for(BILLING_ROLES)
 
-    Only deliverables with amount > 0, status 'Approved', and not already
-    billed are included. The invoice is created as a 'Draft'. Deliverables are
-    marked billed and linked to the generated invoice.
-    """
     if not project:
         frappe.throw("Project name is required")
-    if not _erpnext_available():
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed. Please install ERPNext to use invoicing.", frappe.ValidationError)
 
     if isinstance(data, str):
-        import json
         data = json.loads(data)
     data = data or {}
 
@@ -203,15 +196,15 @@ def create_sales_invoice(project=None, data=None):
     # A deliverable is billable only if it's not already on a valid,
     # non-cancelled invoice. This lets users re-bill deliverables that were
     # cancelled, or those erroneously flagged billed without a live invoice.
-    valid_invoices = _valid_invoice_names({d.sales_invoice for d in deliverables})
+    valid_invoices = get_valid_invoice_names({d.sales_invoice for d in deliverables})
     billable = [
         d for d in deliverables
-        if (d.amount or 0) > 0 and not _is_deliverable_billed(d, valid_invoices)
+        if (d.amount or 0) > 0 and not is_deliverable_billed(d, valid_invoices)
     ]
     if not billable:
         frappe.throw("No billable (approved, unbilled, amount > 0) deliverables found for this project.", frappe.ValidationError)
 
-    item = _resolve_item(project_doc, data)
+    item = resolve_item(project_doc, data)
     if not item:
         frappe.throw("No sellable Item found. Please create at least one Item in ERPNext (is_sales_item = 1).", frappe.ValidationError)
 
@@ -282,26 +275,28 @@ def create_sales_invoice(project=None, data=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_sales_invoice(name=None):
+
     """Fetch a single Sales Invoice by name for viewing in the portal."""
+
+    frappe.only_for(BILLING_ROLES)
     if not name:
         frappe.throw("Sales Invoice name is required")
-    if not _erpnext_available():
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed.", frappe.ValidationError)
     try:
         doc = frappe.get_doc("Sales Invoice", name)
-        return _format_sales_invoice(doc)
+        return format_sales_invoice(doc)
     except frappe.DoesNotExistError:
         frappe.throw("Sales Invoice not found")
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def submit_sales_invoice(name=None):
     """Submit a Draft Sales Invoice so it can be booked/emailed."""
+    frappe.only_for(BILLING_ROLES)
     if not name:
         frappe.throw("Sales Invoice name is required")
-    if not _erpnext_available():
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed.", frappe.ValidationError)
     try:
         doc = frappe.get_doc("Sales Invoice", name)
@@ -309,15 +304,15 @@ def submit_sales_invoice(name=None):
         frappe.throw("Sales Invoice not found")
 
     if doc.docstatus == 1:
-        return _format_sales_invoice(doc)
+        return format_sales_invoice(doc)
 
     doc.flags.ignore_permissions = True
     doc.submit()
     frappe.db.commit()
-    return _format_sales_invoice(frappe.get_doc("Sales Invoice", name))
+    return format_sales_invoice(frappe.get_doc("Sales Invoice", name))
 
 
-def _format_sales_invoice(doc):
+def format_sales_invoice(doc):
     """Return a clean, portal-safe representation of a Sales Invoice."""
     items = []
     for it in doc.items:

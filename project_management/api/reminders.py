@@ -13,7 +13,7 @@ def send_overdue_task_reminders():
     reminders enabled are considered.
     """
 
-    bot = _get_bot()
+    bot = get_bot()
     if not bot:
         frappe.log_error(
             "Raven Bot '{}' was not found or has no Raven User.".format(BOT_NAME),
@@ -21,19 +21,19 @@ def send_overdue_task_reminders():
         )
         return
 
-    for task, project in _get_targets():
+    for task, project in get_targets():
 
-        assignee = _resolve_assignee(task, project)
+        assignee = resolve_assignee(task, project)
         if not assignee:
             continue
 
-        if not _should_remind(task, project):
+        if not should_remind(task, project):
             continue
 
         try:
             bot.send_direct_message(
                 user_id=assignee,
-                text=_build_message(task, project),
+                text=build_message(task, project),
                 link_doctype="Project Task",
                 link_document=task["name"],
             )
@@ -54,7 +54,7 @@ def send_overdue_task_reminders():
     frappe.db.commit()
 
 
-def _get_bot():
+def get_bot():
     """Return (or create) the Raven bot used to send reminders."""
 
     if not frappe.db.exists("DocType", "Raven Bot"):
@@ -81,7 +81,7 @@ def _get_bot():
         return None
 
 
-def _get_targets():
+def get_targets():
     """Return [(task_dict, project_dict)] for projects with reminders enabled."""
 
     projects = frappe.get_all(
@@ -121,7 +121,7 @@ def _get_targets():
     return [(task, project_by_name[task.project]) for task in tasks]
 
 
-def _resolve_assignee(task, project):
+def resolve_assignee(task, project):
     """Use the task assignee, falling back to the project manager.
 
     The assignee must exist both as a Frappe User and a Raven User so the
@@ -136,7 +136,7 @@ def _resolve_assignee(task, project):
     return None
 
 
-def _should_remind(task, project):
+def should_remind(task, project):
     """Decide whether to send a reminder for this task today.
 
     A task is "not on track" and worth reminding when:
@@ -178,7 +178,7 @@ def _should_remind(task, project):
     return now >= add_days(last_sent, days_after_overdue)
 
 
-def _build_message(task, project):
+def build_message(task, project):
     """Build the reminder text for a task."""
 
     due_date = getdate(task["due_date"])
