@@ -1,10 +1,11 @@
-import functools
+import json
 
 import frappe
-from project_management.utils.permissions import require_roles
+
+PURCHASE_ROLES = ("Project Manager", "System Manager")
 
 
-def _erpnext_available():
+def erpnext_available():
     try:
         import erpnext  # noqa: F401
         return True
@@ -12,7 +13,7 @@ def _erpnext_available():
         return False
 
 
-def _valid_purchase_invoice_names(names):
+def get_valid_purchase_invoice_names(names):
     """Only keep live (non-cancelled) Purchase Invoice names."""
     names = {n for n in names if n}
     if not names:
@@ -26,11 +27,11 @@ def _valid_purchase_invoice_names(names):
     return {r.name for r in rows if r.status != "Cancelled"}
 
 
-def _is_row_billed(row, valid_pi_names):
+def is_row_billed(row, valid_pi_names):
     return bool(row.get("is_billed") and row.get("purchase_invoice") and row.get("purchase_invoice") in valid_pi_names)
 
 
-def _get_vendor_rows(project):
+def get_vendor_rows(project):
     return frappe.get_all(
         "Project Vendors",
         filters={"parent": project},
@@ -38,14 +39,20 @@ def _get_vendor_rows(project):
         order_by="creation asc",
     )
 
+def check_invoice_belongs_to_project(name):
+    """Allow only Purchase Invoices linked to a project in this app."""
+    project = frappe.db.get_value("Project Vendors", {"purchase_invoice": name}, "parent")
+    if not project:
+        frappe.throw("Purchase Invoice not found", frappe.DoesNotExistError)
+    frappe.get_doc("Project Info", project).check_permission("write")
 
-def _get_billable_rows(project):
-    rows = _get_vendor_rows(project)
-    valid_pi = _valid_purchase_invoice_names({r.get("purchase_invoice") for r in rows})
-    return [r for r in rows if (r.get("amount") or 0) > 0 and not _is_row_billed(r, valid_pi)]
+def get_billable_rows(project):
+    rows = get_vendor_rows(project)
+    valid_pi = get_valid_purchase_invoice_names({r.get("purchase_invoice") for r in rows})
+    return [r for r in rows if (r.get("amount") or 0) > 0 and not is_row_billed(r, valid_pi)]
 
 
-def _ensure_supplier(vendor_row):
+def ensure_supplier(vendor_row):
     """Return an ERPNext Supplier for a project vendor row, auto-creating one if needed."""
     if vendor_row.get("supplier"):
         return vendor_row["supplier"]
@@ -65,7 +72,7 @@ def _ensure_supplier(vendor_row):
     return supplier.name
 
 
-def _resolve_item(data, vendor_row):
+def resolve_item(data, vendor_row):
     """Pick a purchase item for a vendor row (row.item, else data.item, else any buy item)."""
     if vendor_row.get("item") and frappe.db.exists("Item", vendor_row["item"]):
         return vendor_row["item"]
@@ -79,11 +86,12 @@ def _resolve_item(data, vendor_row):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_purchase_config():
     """Return ERPNext purchase setup data (companies, currencies, buy items,
     and suppliers) for the vendor form."""
-    if not _erpnext_available():
+
+    frappe.only_for(PURCHASE_ROLES)
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed. Please install ERPNext to use purchasing.", frappe.ValidationError)
 
     companies = frappe.get_all("Company", fields=["name", "default_currency"], order_by="name asc", limit=50)
@@ -101,19 +109,22 @@ def get_purchase_config():
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_purchase_billing(project=None):
     """Return purchasing data for a project: vendor rows (with amounts/billed
     status), linked Purchase Invoices, and setup data for the UI."""
+
+    frappe.only_for(PURCHASE_ROLES)
     if not project:
         frappe.throw("Project name is required")
 
     project_doc = frappe.get_doc("Project Info", project)
-    rows = _get_vendor_rows(project)
+    project_doc.check_permission("read")
 
-    valid_pi = _valid_purchase_invoice_names({r.get("purchase_invoice") for r in rows})
+    rows = get_vendor_rows(project)
+
+    valid_pi = get_valid_purchase_invoice_names({r.get("purchase_invoice") for r in rows})
     for r in rows:
-        if not _is_row_billed(r, valid_pi):
+        if not is_row_billed(r, valid_pi):
             r["is_billed"] = 0
 
     invoices = []
@@ -151,12 +162,13 @@ def get_purchase_billing(project=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def create_purchase_invoice(project=None, data=None):
     """Generate a Purchase Invoice from a project's unbilled vendor rows."""
+
+    frappe.only_for(PURCHASE_ROLES)
     if not project:
         frappe.throw("Project name is required")
-    if not _erpnext_available():
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed. Please install ERPNext to use purchasing.", frappe.ValidationError)
 
     if isinstance(data, str):
@@ -165,7 +177,9 @@ def create_purchase_invoice(project=None, data=None):
     data = data or {}
 
     project_doc = frappe.get_doc("Project Info", project)
-    rows = _get_billable_rows(project)
+    project_doc.check_permission("write")
+
+    rows = get_billable_rows(project)
     if not rows:
         frappe.throw("No billable (unbilled, amount > 0) vendor purchases found for this project.", frappe.ValidationError)
 
@@ -183,10 +197,10 @@ def create_purchase_invoice(project=None, data=None):
     # each under the correct supplier name.
     by_supplier = {}
     for row in rows:
-        item = _resolve_item(data, row)
+        item = resolve_item(data, row)
         if not item:
             frappe.throw("No purchase Item found for vendor purchase. Create an Item with is_purchase_item = 1.", frappe.ValidationError)
-        supplier = _ensure_supplier(row)
+        supplier = ensure_supplier(row)
         item_doc = frappe.get_doc("Item", item)
         uom = data.get("uom") or item_doc.sales_uom or item_doc.stock_uom
         by_supplier.setdefault(supplier, []).append({
@@ -244,25 +258,28 @@ def create_purchase_invoice(project=None, data=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def get_purchase_invoice(name=None):
+
+    frappe.only_for(PURCHASE_ROLES)
     if not name:
         frappe.throw("Purchase Invoice name is required")
-    if not _erpnext_available():
+    check_invoice_belongs_to_project(name)
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed.", frappe.ValidationError)
     try:
         doc = frappe.get_doc("Purchase Invoice", name)
     except frappe.DoesNotExistError:
         frappe.throw("Purchase Invoice not found")
-    return _format_purchase_invoice(doc)
+    return format_purchase_invoice(doc)
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "System Manager")
 def submit_purchase_invoice(name=None):
+    frappe.only_for(PURCHASE_ROLES)
     if not name:
         frappe.throw("Purchase Invoice name is required")
-    if not _erpnext_available():
+    check_invoice_belongs_to_project(name)
+    if not erpnext_available():
         frappe.throw("ERPNext app is not installed.", frappe.ValidationError)
     try:
         doc = frappe.get_doc("Purchase Invoice", name)
@@ -270,15 +287,15 @@ def submit_purchase_invoice(name=None):
         frappe.throw("Purchase Invoice not found")
 
     if doc.docstatus == 1:
-        return _format_purchase_invoice(doc)
+        return format_purchase_invoice(doc)
 
     doc.flags.ignore_permissions = True
     doc.submit()
     frappe.db.commit()
-    return _format_purchase_invoice(frappe.get_doc("Purchase Invoice", name))
+    return format_purchase_invoice(frappe.get_doc("Purchase Invoice", name))
 
 
-def _format_purchase_invoice(doc):
+def format_purchase_invoice(doc):
     items = []
     for it in doc.items:
         items.append({

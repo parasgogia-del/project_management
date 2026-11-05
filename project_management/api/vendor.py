@@ -1,17 +1,18 @@
 import frappe
-from project_management.api.client import require_roles, _can_manage_deliverable
+from project_management.api.client import can_manage_deliverable
 
 
-def _resolve_vendor_name(vendor_name=None):
-    """Resolve the Vendor doc name from the session user if not provided."""
-    if vendor_name:
+VENDOR_ROLES = ("Project Manager", "Vendor", "System Manager")
+
+
+def resolve_vendor_name(vendor_name=None):
+    if vendor_name and set(frappe.get_roles()) & {"Project Manager", "System Manager"}:
         return vendor_name
     names = frappe.get_all("Vendor", filters={"user": frappe.session.user}, pluck="name")
     return names[0] if names else None
 
 
-def _get_vendor_project_names(vendor_name):
-    """Projects in which the given vendor is linked (via Project Vendors child)."""
+def get_vendor_project_names(vendor_name):
     return frappe.get_all(
         "Project Vendors",
         filters={"vendor": vendor_name},
@@ -20,13 +21,13 @@ def _get_vendor_project_names(vendor_name):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "Vendor")
 def get_vendor_projects(vendor_name=None):
-    vendor_name = _resolve_vendor_name(vendor_name)
+    frappe.only_for(VENDOR_ROLES)
+    vendor_name = resolve_vendor_name(vendor_name)
     if not vendor_name:
         return []
 
-    project_names = _get_vendor_project_names(vendor_name)
+    project_names = get_vendor_project_names(vendor_name)
     if not project_names:
         return []
 
@@ -50,19 +51,16 @@ def get_vendor_projects(vendor_name=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "Vendor")
 def get_vendor_project(name=None):
-    """Read-only project details for a vendor: safe fields only, plus the
-    project's deliverables and the tasks assigned to this vendor. Does not
-    expose other members/vendors/internal data."""
+    frappe.only_for(VENDOR_ROLES)
     if not name:
         frappe.throw("Project name is required")
 
-    vendor_name = _resolve_vendor_name()
+    vendor_name = resolve_vendor_name()
     if not vendor_name:
         return None
 
-    if name not in _get_vendor_project_names(vendor_name):
+    if name not in get_vendor_project_names(vendor_name):
         frappe.throw("You are not associated with this project", frappe.PermissionError)
 
     project = frappe.get_doc("Project Info", name)
@@ -111,13 +109,14 @@ def get_vendor_project(name=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "Vendor")
 def get_vendor_deliverables(vendor_name=None):
-    vendor_name = _resolve_vendor_name(vendor_name)
+
+    frappe.only_for(VENDOR_ROLES)
+    vendor_name = resolve_vendor_name(vendor_name)
     if not vendor_name:
         return []
 
-    project_names = _get_vendor_project_names(vendor_name)
+    project_names = get_vendor_project_names(vendor_name)
     if not project_names:
         return []
 
@@ -156,9 +155,9 @@ def get_vendor_deliverables(vendor_name=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "Vendor")
 def get_vendor_tasks(vendor_name=None):
-    vendor_name = _resolve_vendor_name(vendor_name)
+    frappe.only_for(VENDOR_ROLES)
+    vendor_name = resolve_vendor_name(vendor_name)
     if not vendor_name:
         return []
 
@@ -185,18 +184,14 @@ def get_vendor_tasks(vendor_name=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager", "Vendor")
 def submit_deliverable(name=None, file_url=None, notes=None):
-    """Submit a deliverable for review. Only allowed from WIP state.
 
-    Records the delivery (file, notes, submitter, delivery date) and moves the
-    deliverable to 'Ready for Approval' for the manager to review.
-    """
+    frappe.only_for(VENDOR_ROLES)
     if not name:
         frappe.throw("Deliverable name is required")
 
     deliverable = frappe.get_doc("Deliverable", name)
-    if not _can_manage_deliverable(deliverable):
+    if not can_manage_deliverable(deliverable):
         frappe.throw("You are not associated with this project", frappe.PermissionError)
 
     if deliverable.status != "WIP":
@@ -206,6 +201,7 @@ def submit_deliverable(name=None, file_url=None, notes=None):
         deliverable.file = file_url
     if notes:
         deliverable.access_link__notes = notes
+        
     deliverable.submitted_by = frappe.session.user
     deliverable.delivery_date = frappe.utils.today()
     deliverable.status = "Ready for Approval"

@@ -1,11 +1,6 @@
-import functools
-
 import frappe
-from project_management.utils.permissions import require_roles
-
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def create_project(data=None):
     if not data:
         frappe.throw("Data is required")
@@ -13,8 +8,8 @@ def create_project(data=None):
         import json
         data = json.loads(data)
 
-    _skip = {"doctype", "project_members", "vendors"}
-    project_data = {k: v for k, v in data.items() if k not in _skip}
+    skip_fields = {"doctype", "project_members", "vendors"}
+    project_data = {k: v for k, v in data.items() if k not in skip_fields}
     project_data["doctype"] = "Project Info"
     doc = frappe.get_doc(project_data)
 
@@ -25,13 +20,12 @@ def create_project(data=None):
         if v.get("vendor"):
             doc.append("vendors", v)
 
-    doc.insert(ignore_permissions=True)
+    doc.insert()
     frappe.db.commit()
     return doc.as_dict()
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def create_task(data=None):
     if not data:
         frappe.throw("Data is required")
@@ -54,13 +48,12 @@ def create_task(data=None):
         "due_date": data.get("due_date"),
     }
     doc = frappe.get_doc(task_data)
-    doc.insert(ignore_permissions=True)
+    doc.insert()
     frappe.db.commit()
     return doc.as_dict()
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def create_deliverable(data=None):
     if not data:
         frappe.throw("Data is required")
@@ -79,13 +72,12 @@ def create_deliverable(data=None):
         "due_date": data.get("due_date"),
         "status": data.get("status", "Draft"),
     })
-    doc.insert(ignore_permissions=True)
+    doc.insert()
     frappe.db.commit()
     return doc.as_dict()
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def update_deliverable(name=None, data=None):
     if not name:
         frappe.throw("Deliverable name is required")
@@ -95,7 +87,7 @@ def update_deliverable(name=None, data=None):
         import json
         data = json.loads(data)
 
-    allowed_fields = ["title", "project", "description", "due_date", "status", "amount"]
+    allowed_fields = ["title", "project", "description", "due_date", "amount"]
     filtered = {k: v for k, v in data.items() if k in allowed_fields}
 
     doc = frappe.get_doc("Deliverable", name)
@@ -106,25 +98,25 @@ def update_deliverable(name=None, data=None):
         if frappe.db.exists("Deliverable", new_title):
             frappe.throw("A deliverable with this title already exists")
         from frappe.model.rename_doc import rename_doc
-        rename_doc("Deliverable", doc.name, new_title, ignore_permissions=True)
+        rename_doc("Deliverable", doc.name, new_title)
         doc = frappe.get_doc("Deliverable", new_title)
 
     for field, value in filtered.items():
         if field == "title":
             continue
         doc.set(field, value)
-    doc.flags.ignore_permissions = True
+
     doc.save()
     frappe.db.commit()
     return frappe.get_doc("Deliverable", doc.name).as_dict()
 
 
-def _get_vendor_for_user(user):
+def get_vendor_for_user(user):
     names = frappe.get_all("Vendor", filters={"user": user}, pluck="name")
     return names[0] if names else None
 
 
-def _get_role_users(role):
+def get_role_users(role):
     """Users holding the given role, formatted as autocomplete options."""
     users = frappe.get_all("Has Role", filters={"role": role}, pluck="parent")
     options = []
@@ -138,17 +130,18 @@ def _get_role_users(role):
 @frappe.whitelist()
 def get_form_options():
     """Options for the project form: clients, managers, members, and vendors."""
+    frappe.has_permission("Project Info", "read", throw=True)
     vendors = frappe.get_all("Vendor", fields=["name", "vendor_name"], order_by="vendor_name asc")
     return {
-        "clients": _get_role_users("Client"),
-        "project_managers": _get_role_users("Project Manager"),
-        "members": _get_role_users("Project Member"),
+        "clients": get_role_users("Client"),
+        "project_managers": get_role_users("Project Manager"),
+        "members": get_role_users("Project Member"),
         "vendors": [{"label": v.vendor_name or v.name, "value": v.name} for v in vendors],
-        "all_users": _get_all_users(),
+        "all_users": get_all_users(),
     }
 
 
-def _get_all_users():
+def get_all_users():
     """All enabled users (except Administrator) formatted as autocomplete options."""
     users = frappe.get_all("User", filters={"enabled": 1}, fields=["name", "full_name"], order_by="full_name asc")
     options = []
@@ -161,7 +154,7 @@ def _get_all_users():
     return options
 
 
-def _get_user_project_names(user):
+def get_user_project_names(user):
     """All projects a user is associated with: client, manager, member, or vendor."""
     names = set()
     for row in frappe.get_all("Project Info", filters={"client": user}, fields=["name"]):
@@ -170,33 +163,33 @@ def _get_user_project_names(user):
         names.add(row["name"])
     for row in frappe.get_all("Project Member", filters={"user": user}, fields=["parent"]):
         names.add(row["parent"])
-    vendor = _get_vendor_for_user(user)
+    vendor = get_vendor_for_user(user)
     if vendor:
         for row in frappe.get_all("Project Vendors", filters={"vendor": vendor}, fields=["parent"]):
             names.add(row["parent"])
     return names
 
 
-def _is_client(user=None):
+def is_client(user=None):
     user = user or frappe.session.user
     return "Client" in frappe.get_roles(user)
 
 
-def _can_access_project(project, user=None):
+def can_access_project(project, user=None):
     """Whether the current user can access the given project.
 
     Only clients are restricted to their own projects; all other roles
     (manager, member, vendor) can access any project.
     """
     user = user or frappe.session.user
-    if _is_client(user):
-        return project in _get_user_project_names(user)
+    if is_client(user):
+        return project in get_user_project_names(user)
     return True
 
 
 @frappe.whitelist()
 def get_projects():
-    projects = frappe.get_all(
+    projects = frappe.get_list(
         "Project Info",
         filters={},
         fields=[
@@ -210,6 +203,7 @@ def get_projects():
             "end_date",
             "description",
         ],
+        limit_page_length=0,
     )
     return projects
 
@@ -218,10 +212,11 @@ def get_projects():
 def get_project(name=None, portal=None):
     if not name:
         return None
-    if portal == "client" and not _can_access_project(name):
+    if is_client() and not can_access_project(name):
         frappe.throw("You are not associated with this project", frappe.PermissionError)
     try:
         project = frappe.get_doc("Project Info", name)
+        project.check_permission("read")
         data = project.as_dict()
 
         if data.get("project_members"):
@@ -242,15 +237,15 @@ def get_project(name=None, portal=None):
 def get_deliverables(project=None, portal=None):
     filters = {}
     if project:
-        if portal == "client" and not _can_access_project(project):
+        if is_client() and not can_access_project(project):
             frappe.throw("You are not associated with this project", frappe.PermissionError)
         filters["project"] = project
     else:
-        if portal == "client":
-            names = sorted(_get_user_project_names(frappe.session.user))
+        if is_client():
+            names = sorted(get_user_project_names(frappe.session.user))
             filters["project"] = ["in", names]
 
-    deliverables = frappe.get_all(
+    deliverables = frappe.get_list(
         "Deliverable",
         filters=filters,
         fields=[
@@ -263,12 +258,12 @@ def get_deliverables(project=None, portal=None):
             "submitted_by",
             "delivery_date",
         ],
+        limit_page_length=0,
     )
     return deliverables
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def update_project(name=None, data=None):
     if not name:
         frappe.throw("Project name is required")
@@ -287,21 +282,27 @@ def update_project(name=None, data=None):
             doc.set(field, value)
 
     if "project_members" in data:
-        _replace_child_table(doc, "project_members", data["project_members"])
+        replace_child_table(doc, "project_members", data["project_members"])
 
     if "vendors" in data:
-        _replace_child_table(doc, "vendors", data["vendors"])
+        replace_child_table(doc, "vendors", data["vendors"])
 
-    doc.flags.ignore_permissions = True
     doc.save()
     frappe.db.commit()
     return doc.as_dict()
 
+
 @frappe.whitelist()
-@require_roles("Project Manager", "Client")
 def invite_project_member(project=None, email=None, role="Client Reviewer", notes=""):
     if not project or not email:
         frappe.throw("Project and email are required")
+
+    project_doc = frappe.get_doc("Project Info", project)
+    if not (
+        frappe.has_permission("Project Info", "write", doc=project_doc)
+        or project_doc.client == frappe.session.user
+    ):
+        frappe.throw("You are not allowed to invite members to this project", frappe.PermissionError)
 
     user = frappe.db.get_value("User", {"email": email}, "name")
     if not user:
@@ -324,10 +325,10 @@ def invite_project_member(project=None, email=None, role="Client Reviewer", note
     })
     doc.insert(ignore_permissions=True)
 
-    project_doc = frappe.get_doc("Project Info", project)
     client_name = frappe.utils.get_fullname(frappe.session.user)
     subject = f"{client_name} invited you to project '{project_doc.project_name}'"
     email_content = f"You have been invited to the project <b>{project_doc.project_name}</b>."
+
     if notes:
         email_content += f"<br><br><b>Notes:</b> {notes}"
     frappe.get_doc({
@@ -349,19 +350,17 @@ def invite_project_member(project=None, email=None, role="Client Reviewer", note
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def delete_project(name=None):
     if not name:
         frappe.throw("Project name is required")
     if not frappe.db.exists("Project Info", name):
         frappe.throw("Project not found")
-    frappe.delete_doc("Project Info", name, ignore_permissions=True)
+    frappe.delete_doc("Project Info", name)
     frappe.db.commit()
     return {"status": "ok"}
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def update_task(name=None, data=None):
     if not name:
         frappe.throw("Task name is required")
@@ -378,51 +377,21 @@ def update_task(name=None, data=None):
     doc = frappe.get_doc("Project Task", name)
     for field, value in filtered.items():
         doc.set(field, value)
-    doc.flags.ignore_permissions = True
+
     doc.save()
     frappe.db.commit()
     return doc.as_dict()
 
 
-def _replace_child_table(doc, fieldname, rows):
-    """Replace a parent doc's child table rows in memory so the parent's
-    save() triggers on_update (which syncs Raven channels).
+def replace_child_table(doc, fieldname, rows):
 
-    The child row `name` is preserved (not skipped) so Frappe updates the
-    existing child rows in place instead of deleting and recreating them.
-    This keeps fields like vendor `is_billed` / `purchase_invoice` intact when
-    the project is edited, preventing linked Purchase Invoices from being
-    orphaned and duplicated.
-    """
-    _skip = {"doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
+    skip_fields = {"doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
 
     doc.set(fieldname, [])
     for row in rows:
-        row_data = {k: v for k, v in row.items() if k not in _skip}
+        row_data = {k: v for k, v in row.items() if k not in skip_fields}
         if row_data:
             doc.append(fieldname, row_data)
-
-
-def _update_child_table(parent_doctype, parent_name, fieldname, child_doctype, rows):
-    _skip = {"name", "doctype", "parent", "parenttype", "parentfield", "idx", "creation", "modified", "modified_by", "owner"}
-
-    existing = frappe.get_all(child_doctype, filters={"parent": parent_name}, pluck="name")
-    incoming_ids = {r.get("name") for r in rows if r.get("name")}
-
-    for e_name in existing:
-        if e_name not in incoming_ids:
-            frappe.delete_doc(child_doctype, e_name, ignore_permissions=True)
-
-    for row in rows:
-        row_data = {k: v for k, v in row.items() if k not in _skip}
-        if row.get("name") and row["name"] in existing:
-            frappe.db.set_value(child_doctype, row["name"], row_data)
-        else:
-            row_data["parent"] = parent_name
-            row_data["parenttype"] = parent_doctype
-            row_data["parentfield"] = fieldname
-            frappe.get_doc({"doctype": child_doctype, **row_data}).insert(ignore_permissions=True)
-
 
 @frappe.whitelist()
 def get_deliverables_with_details(project=None):
@@ -430,7 +399,7 @@ def get_deliverables_with_details(project=None):
     if project:
         filters["project"] = project
 
-    deliverables = frappe.get_all(
+    deliverables = frappe.get_list(
         "Deliverable",
         filters=filters,
         fields=[
@@ -443,13 +412,15 @@ def get_deliverables_with_details(project=None):
             "description",
             "submitted_by",
         ],
+        limit_page_length=0,
     )
 
     for d in deliverables:
-        tasks = frappe.get_all(
+        tasks = frappe.get_list(
             "Project Task",
             filters={"deliverable": d.name},
             fields=["name", "status", "assigned_to", "assigned_vendor"],
+            limit_page_length=0,
         )
 
         total = len(tasks)
@@ -479,6 +450,7 @@ def get_deliverable(name=None):
         return None
     try:
         deliverable = frappe.get_doc("Deliverable", name)
+        deliverable.check_permission("read")
         return deliverable.as_dict()
     except frappe.DoesNotExistError:
         return None
@@ -493,13 +465,13 @@ def get_tasks(project=None, deliverable=None, assigned_to=None, portal=None):
         filters["deliverable"] = deliverable
     if assigned_to:
         filters["assigned_to"] = assigned_to
-    if portal == "client":
-        if project and not _can_access_project(project):
+    if is_client():
+        if project and not can_access_project(project):
             frappe.throw("You are not associated with this project", frappe.PermissionError)
         elif not project:
-            filters["project"] = ["in", sorted(_get_user_project_names(frappe.session.user))]
+            filters["project"] = ["in", sorted(get_user_project_names(frappe.session.user))]
 
-    tasks = frappe.get_all(
+    tasks = frappe.get_list(
         "Project Task",
         filters=filters,
         fields=[
@@ -519,6 +491,7 @@ def get_tasks(project=None, deliverable=None, assigned_to=None, portal=None):
             "is_today_focus",
         ],
         order_by="creation desc",
+        limit_page_length=0,
     )
     return tasks
 
@@ -529,6 +502,7 @@ def get_task(name=None):
         return None
     try:
         task = frappe.get_doc("Project Task", name)
+        task.check_permission("read")
         return task.as_dict()
     except frappe.DoesNotExistError:
         return None
@@ -540,7 +514,7 @@ def get_time_logs(task=None):
     if task:
         filters["task"] = task
 
-    logs = frappe.get_all(
+    logs = frappe.get_list(
         "Time Log",
         filters=filters,
         fields=[
@@ -553,6 +527,7 @@ def get_time_logs(task=None):
             "description",
         ],
         order_by="date desc",
+        limit_page_length=0,
     )
     return logs
 
@@ -574,7 +549,7 @@ def create_time_log(task=None, project=None, date=None, hours=None, description=
         "hours": float(hours),
         "description": description or "",
     })
-    doc.insert(ignore_permissions=True)
+    doc.insert()
     frappe.db.commit()
     return doc.as_dict()
 
@@ -584,21 +559,19 @@ def toggle_today_focus(name=None):
         frappe.throw("Task name is required")
     doc = frappe.get_doc("Project Task", name)
     doc.is_today_focus = 0 if doc.is_today_focus else 1
-    doc.flags.ignore_permissions = True
     doc.save()
     frappe.db.commit()
     return {"is_today_focus": doc.is_today_focus}
 
 @frappe.whitelist()
-def get_today_hours(user=None):
-    if not user:
-        user = frappe.session.user
+def get_today_hours():
+    user = frappe.session.user
     today = frappe.utils.today()
-    logs = frappe.get_all(
+    logs = frappe.get_list(
         "Time Log",
         filters={"project_member": user, "creation": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]},
         fields=["hours"],
-        ignore_permissions=True,
+        limit_page_length=0,
     )
     return sum(l.hours or 0 for l in logs)
 
@@ -609,15 +582,13 @@ def update_task_status(name=None, status=None):
 
     task = frappe.get_doc("Project Task", name)
     task.status = status
-    task.flags.ignore_permissions = True
     task.save()
     frappe.db.commit()
 
     return {"status": "ok"}
 
 
-def _get_project_users(project):
-    """Return the users associated with a project: manager, client, members, vendors."""
+def get_project_users(project):
     users = {"project_manager": None, "client": None, "members": set(), "vendors": set()}
     if not project:
         return users
@@ -636,14 +607,13 @@ def _get_project_users(project):
     return users
 
 
-def _can_manage_deliverable(deliverable):
-    """Whether the current user is associated with the deliverable's project."""
+def can_manage_deliverable(deliverable):
     user = frappe.session.user
     if user == "Administrator" or "System Manager" in frappe.get_roles():
         return True
 
     roles = set(frappe.get_roles())
-    users = _get_project_users(deliverable.get("project"))
+    users = get_project_users(deliverable.get("project"))
     if "Project Manager" in roles:
         return users["project_manager"] == user or user in users["members"]
     if "Project Member" in roles:
@@ -661,7 +631,8 @@ def get_deliverable_access(name=None):
     if not name:
         return {"can_manage": False}
     deliverable = frappe.get_doc("Deliverable", name)
-    return {"can_manage": _can_manage_deliverable(deliverable)}
+    deliverable.check_permission("read")
+    return {"can_manage": can_manage_deliverable(deliverable)}
 
 
 @frappe.whitelist()
@@ -671,12 +642,12 @@ def get_my_projects():
     if user == "Guest":
         return []
 
-    if _is_client(user):
-        project_names = _get_user_project_names(user)
+    if is_client(user):
+        project_names = get_user_project_names(user)
     elif user == "Administrator" or "System Manager" in frappe.get_roles():
         project_names = {row["name"] for row in frappe.get_all("Project Info", fields=["name"])}
     else:
-        project_names = _get_user_project_names(user)
+        project_names = get_user_project_names(user)
 
     projects = []
     for name in sorted(project_names):
@@ -740,7 +711,7 @@ def update_deliverable_status(name=None, action=None):
         frappe.throw("Name and action are required")
 
     deliverable = frappe.get_doc("Deliverable", name)
-    if not _can_manage_deliverable(deliverable):
+    if not can_manage_deliverable(deliverable):
         frappe.throw("You are not associated with this project", frappe.PermissionError)
 
     action_map = {
@@ -767,13 +738,12 @@ def update_deliverable_status(name=None, action=None):
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def get_gantt_tasks(project=None):
     filters = {}
     if project:
         filters["project"] = project
 
-    tasks = frappe.get_all(
+    tasks = frappe.get_list(
         "Project Task",
         filters=filters,
         fields=[
@@ -790,6 +760,7 @@ def get_gantt_tasks(project=None):
             "estimated_hours",
         ],
         order_by="start_date asc",
+        limit_page_length=0,
     )
 
     today = frappe.utils.today()
@@ -811,7 +782,7 @@ def get_gantt_tasks(project=None):
 def get_comments(reference_doctype=None, reference_name=None):
     if not reference_doctype or not reference_name:
         frappe.throw("reference_doctype and reference_name are required")
-    comments = frappe.get_all(
+    comments = frappe.get_list(
         "Comment",
         filters={
             "reference_doctype": reference_doctype,
@@ -820,6 +791,7 @@ def get_comments(reference_doctype=None, reference_name=None):
         },
         fields=["name", "content", "comment_email", "owner", "creation"],
         order_by="creation asc",
+        limit_page_length=0,
     )
     return comments
 
@@ -835,7 +807,7 @@ def add_comment(reference_doctype=None, reference_name=None, content=None):
         "reference_name": reference_name,
         "content": content,
     })
-    doc.insert(ignore_permissions=True)
+    doc.insert()
     frappe.db.commit()
     return {"status": "ok"}
 
@@ -920,7 +892,6 @@ def get_notifications():
 
 
 @frappe.whitelist()
-@require_roles("Project Manager")
 def get_progress_report(project=None, period="daily"):
     today = frappe.utils.today()
     if period == "weekly":
@@ -932,11 +903,12 @@ def get_progress_report(project=None, period="daily"):
     if project:
         task_filters["project"] = project
 
-    all_tasks = frappe.get_all(
+    all_tasks = frappe.get_list(
         "Project Task",
         filters=task_filters,
         fields=["name", "title", "status", "start_date", "due_date", "assigned_to",
                 "estimated_hours", "actual_hours", "project", "creation", "modified"],
+        limit_page_length=0,
     )
 
     total_tasks = len(all_tasks)
@@ -957,10 +929,11 @@ def get_progress_report(project=None, period="daily"):
         if t.creation and str(t.creation)[:10] >= start
     )
 
-    time_logs = frappe.get_all(
+    time_logs = frappe.get_list(
         "Time Log",
         filters={"date": ["between", [start, today]]},
         fields=["name", "task", "project", "date", "hours", "project_member"],
+        limit_page_length=0,
     )
     if project:
         time_logs = [l for l in time_logs if l.project == project]
@@ -970,10 +943,11 @@ def get_progress_report(project=None, period="daily"):
     deliverable_filters = {}
     if project:
         deliverable_filters["project"] = project
-    deliverables = frappe.get_all(
+    deliverables = frappe.get_list(
         "Deliverable",
         filters=deliverable_filters,
         fields=["name", "title", "status"],
+        limit_page_length=0,
     )
     total_deliverables = len(deliverables)
     approved_deliverables = sum(1 for d in deliverables if d.status == "Approved")
@@ -1018,6 +992,8 @@ def get_deliverable_for_task(task=None):
         return {"found": False}
     parent = frappe.db.get_value("Deliverable Task", {"task": task}, "parent")
     if not parent:
+        return {"found": False}
+    if not frappe.has_permission("Deliverable", "read", parent):
         return {"found": False}
     doc = frappe.db.get_value("Deliverable", parent, ["name", "title", "status"], as_dict=True)
     if not doc:

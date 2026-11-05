@@ -2,21 +2,19 @@ import frappe
 from frappe import _
 from frappe.utils.file_manager import save_file
 
-# Ek hi jagah config: har type ka DocType
 PROJECT = "Project Info"
 DELIVERABLE = "Deliverable"
 TASK = "Project Task"
 
 
-def _check_access(doctype, name, ptype):
-    """User ko is record par permission na ho to error."""
+def check_access(doctype, name, ptype):
     if not frappe.db.exists(doctype, name):
         frappe.throw(_("{0} {1} not found").format(doctype, name), frappe.DoesNotExistError)
     frappe.has_permission(doctype, ptype, name, throw=True)
 
 
-def _upload(doctype, name):
-    _check_access(doctype, name, "write")
+def upload_attached_file(doctype, name):
+    check_access(doctype, name, "write")
 
     if "file" not in frappe.request.files:
         frappe.throw(_("No file uploaded"))
@@ -36,8 +34,8 @@ def _upload(doctype, name):
     return result
 
 
-def _list(doctype, name):
-    _check_access(doctype, name, "read")
+def list_attached_files(doctype, name):
+    check_access(doctype, name, "read")
 
     files = frappe.get_all(
         "File",
@@ -55,7 +53,7 @@ def _list(doctype, name):
     return files
 
 
-def _delete(file_name, doctype):
+def delete_attached_file(file_name, doctype):
     file = frappe.db.get_value(
         "File",
         file_name,
@@ -66,62 +64,57 @@ def _delete(file_name, doctype):
     if not file:
         frappe.throw(_("File not found"), frappe.DoesNotExistError)
 
-    # Ye file isi type ke record ki honi chahiye
     if file.attached_to_doctype != doctype:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
 
-    # User ko us parent record par write permission honi chahiye
-    _check_access(doctype, file.attached_to_name, "write")
 
-    # Permission upar hum khud check kar chuke hain
+    check_access(doctype, file.attached_to_name, "write")
+
     frappe.delete_doc("File", file_name, ignore_permissions=True)
 
     return {"message": "Deleted"}
 
 
-# ---------- Project ----------
 @frappe.whitelist()
 def upload_project_file(project):
-    return _upload(PROJECT, project)
+    return upload_attached_file(PROJECT, project)
 
 
 @frappe.whitelist()
 def get_project_files(project):
-    return _list(PROJECT, project)
+    return list_attached_files(PROJECT, project)
 
 
 @frappe.whitelist()
 def delete_project_file(file_name):
-    return _delete(file_name, PROJECT)
+    return delete_attached_file(file_name, PROJECT)
 
 
-# ---------- Deliverable ----------
 @frappe.whitelist()
 def upload_deliverable_file(deliverable):
-    return _upload(DELIVERABLE, deliverable)
+    return upload_attached_file(DELIVERABLE, deliverable)
 
 
 @frappe.whitelist()
 def get_deliverable_files(deliverable):
-    return _list(DELIVERABLE, deliverable)
+    return list_attached_files(DELIVERABLE, deliverable)
 
 
 @frappe.whitelist()
 def delete_deliverable_file(file_name):
-    return _delete(file_name, DELIVERABLE)
+    return delete_attached_file(file_name, DELIVERABLE)
 
 
-# ---------- Task ----------
 @frappe.whitelist()
 def upload_task_file(task):
-    return _upload(TASK, task)
+    return upload_attached_file(TASK, task)
 
 
 @frappe.whitelist()
 def get_task_files(task):
-    return _list(TASK, task)
+    return list_attached_files(TASK, task)
 
 
 @frappe.whitelist()
 def delete_task_file(file_name):
-    return _delete(file_name, TASK)
+    return delete_attached_file(file_name, TASK)

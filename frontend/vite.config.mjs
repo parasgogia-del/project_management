@@ -3,25 +3,14 @@ import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import frappeuiPlugin from 'frappe-ui/vite'
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [vue(), frappeuiPlugin({ buildConfig: false })],
-  base: mode === 'production' ? '/assets/project_management/frontend/' : '/',
-  server: {
-    port: 8080,
-    proxy: {
-      '^/(api|assets|files|private)': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
+  base: '/assets/project_management/frontend/',
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
+    alias: { '@': path.resolve(__dirname, 'src') },
   },
   build: {
-    outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
+    outDir: '../project_management/public/frontend',
     emptyOutDir: true,
     target: 'es2015',
     manifest: true,
@@ -38,4 +27,4 @@ export default defineConfig(({ mode }) => ({
       'interactjs',
     ],
   },
-}))
+})
