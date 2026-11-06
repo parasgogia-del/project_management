@@ -6,11 +6,10 @@ from frappe.model.document import Document
 
 
 class Deliverable(Document):
+	def before_insert(self):
+		if not self.submitted_by:
+			self.submitted_by = frappe.session.user
 
-    def before_insert(self):
-        if not self.submitted_by:
-            self.submitted_by = frappe.session.user
-
-    def on_update(self):
-        if self.workflow_state == "Approved" and not self.delivery_date:
-            self.db_set("delivery_date", frappe.utils.today())
+	def on_update(self):
+		if self.workflow_state == "Approved" and not self.delivery_date:
+			self.db_set("delivery_date", frappe.utils.today())

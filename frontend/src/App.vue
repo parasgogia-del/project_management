@@ -1,13 +1,13 @@
 <template>
-  <router-view />
-  <ToastProvider />
+	<router-view />
+	<ToastProvider />
 </template>
 
 <script>
-import { ToastProvider } from 'frappe-ui'
+import { ToastProvider } from "frappe-ui";
 
 export default {
-  name: 'App',
-  components: { ToastProvider },
-}
+	name: "App",
+	components: { ToastProvider },
+};
 </script>

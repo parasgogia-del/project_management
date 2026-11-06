@@ -1,7 +1,7 @@
+
 exclude: 'node_modules|.git'
 default_stages: [pre-commit]
 fail_fast: false
-
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -35,16 +35,15 @@ repos:
     hooks:
       - id: prettier
         types_or: [javascript, vue, scss]
-        # Ignore any files that might contain jinja / bundles
         exclude: |
-            (?x)^(
-                project_management/public/dist/.*|
-                .*node_modules.*|
-                .*boilerplate.*|
-                project_management/templates/includes/.*|
-                project_management/public/js/lib/.*
-            )$
-
+          (?x)^(
+              project_management/public/dist/.*|
+              project_management/public/frontend/assets/.*|
+              .*node_modules.*|
+              .*boilerplate.*|
+              project_management/templates/includes/.*|
+              project_management/public/js/lib/.*
+          )$
 
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.44.0
@@ -52,18 +51,18 @@ repos:
       - id: eslint
         types_or: [javascript]
         args: ['--quiet']
-        # Ignore any files that might contain jinja / bundles
         exclude: |
-            (?x)^(
-                project_management/public/dist/.*|
-                cypress/.*|
-                .*node_modules.*|
-                .*boilerplate.*|
-                project_management/templates/includes/.*|
-                project_management/public/js/lib/.*
-            )$
+          (?x)^(
+              project_management/public/dist/.*|
+              project_management/public/frontend/assets/.*|
+              cypress/.*|
+              .*node_modules.*|
+              .*boilerplate.*|
+              project_management/templates/includes/.*|
+              project_management/public/js/lib/.*
+          )$
 
 ci:
-    autoupdate_schedule: weekly
-    skip: []
-    submodules: false
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

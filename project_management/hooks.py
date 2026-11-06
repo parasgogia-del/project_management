@@ -91,23 +91,52 @@ fixtures = [
 	},
 	{
 		"dt": "Workflow State",
-		"filters": [["name", "in", [
-			"Draft", "WIP", "Ready for Approval",
-			"Awaiting Client Review", "Approved", "Changes Requested",
-		]]],
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Draft",
+					"WIP",
+					"Ready for Approval",
+					"Awaiting Client Review",
+					"Approved",
+					"Changes Requested",
+				],
+			]
+		],
 	},
 	{
 		"dt": "Workflow Action Master",
-		"filters": [["name", "in", [
-			"Start Work", "Submit", "Send to Client",
-			"Approve", "Request Changes", "Resume Work",
-		]]],
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Start Work",
+					"Submit",
+					"Send to Client",
+					"Approve",
+					"Request Changes",
+					"Resume Work",
+				],
+			]
+		],
 	},
 	{
 		"dt": "Role",
-		"filters": [["name", "in", [
-			"Project Member", "Project Manager", "Vendor", "Client",
-		]]],
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Project Member",
+					"Project Manager",
+					"Vendor",
+					"Client",
+				],
+			]
+		],
 	},
 	{
 		"dt": "Custom Field",
@@ -202,9 +231,7 @@ fixtures = [
 scheduler_events = {
 	"cron": {
 		# Automated task reminders - runs daily at 09:00 server time
-		"00 09 * * *": [
-			"project_management.api.reminders.send_overdue_task_reminders"
-		],
+		"00 09 * * *": ["project_management.api.reminders.send_overdue_task_reminders"],
 	},
 }
 
@@ -300,9 +327,8 @@ scheduler_events = {
 # Website Route Rules (SPA)
 # -------------------------
 website_route_rules = [
-    {
-        "from_route": "/project_management/<path:app_path>",
-        "to_route": "project_management",
-    },
+	{
+		"from_route": "/project_management/<path:app_path>",
+		"to_route": "project_management",
+	},
 ]
-
